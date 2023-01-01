@@ -17,14 +17,12 @@ class Fred:
             "sort_order": "asc",  # sort the data in ascending order
         }
 
-    async def get_series(self, serie_name, series_id, frequency='m'):
+    # get results from FRED API, put the results in a dataframe and return it
+    async def get_one_serie(self, serie_name, series_id, frequency='m'):
         async with aiohttp.ClientSession() as session:
-
             self.params['series_id'] = series_id
             self.params['frequency'] = frequency
             async with session.get(self.api_endpoint, params=self.params) as response:
-                # print(f"Serie ID: {series_id}, Status: {response.status}, Content type: {response.content_type}")
-                # print(await response.text())
                 try:
                     data = await response.json()
                     df = pd.DataFrame.from_dict(data['observations'])
@@ -58,7 +56,7 @@ series = [
 
 
 async def get_results():
-    tasks = [fred.get_series(**one_serie) for one_serie in series]
+    tasks = [fred.get_one_serie(**one_serie) for one_serie in series]
     results = []
     for task in asyncio.as_completed(tasks): # keeps the order of the results
         result = await task
