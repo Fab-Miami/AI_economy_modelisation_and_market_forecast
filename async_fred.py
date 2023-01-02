@@ -25,6 +25,8 @@ import time
 import pandas as pd
 
 # *************************************************************************************************
+#                                        SERIES
+# -------------------------------------------------------------------------------------------------
 series = [
     {'series_name': 'Gross Domestic Product', 'series_id': 'GDPC1', 'frequency': 'q'},
     {'series_name': 'Unemployment Rate', 'series_id': 'UNRATE', 'frequency': 'm'},
@@ -36,17 +38,31 @@ series = [
     {'series_name': 'S&P500', 'series_id': 'SP500', 'frequency': 'm'},
     {'series_name': 'Dow Jones', 'series_id': 'DJIA', 'frequency': 'm'},
     {'series_name': 'Consumer Confidence Index', 'series_id': 'CSCICP03USM665S', 'frequency': 'm'}, # Consumer Confidence Index
+    {'series_name': 'US Market Cap', 'series_id': 'SPASTT01USM661N', 'frequency': 'm'}, # Total Share Prices for All Shares for the United States
+    {'series_name': 'Population', 'series_id': 'POP', 'frequency': 'm'}, # US population
+    {'series_name': 'US Debt', 'series_id': 'GFDEGDQ188S', 'frequency': 'q'}, # US Debt
+    {'series_name': 'US Trade Balance', 'series_id': 'TB3MS', 'frequency': 'm'}, # US Trade Balance
+    {'series_name': 'US Bonds Rate 10y', 'series_id': 'DGS10', 'frequency': 'm'}, # US Bonds Rate 10 years
+    {'series_name': 'US Bonds Rate 1y', 'series_id': 'DGS1', 'frequency': 'm'}, # US Bonds Rate 1 year
+    {'series_name': 'AAA Bond Rate', 'series_id': 'AAA', 'frequency': 'm'}, # AAA Average Corporate Bond Yield
+    {'series_name': 'BAA Bond Rate', 'series_id': 'BAA', 'frequency': 'm'}, # BAA Average Corporate Bond Yield
+    {'series_name': 'Money Velocity', 'series_id': 'M1V', 'frequency': 'q'}, # Money Velocity (of spending)
 ]
-years_of_history = 50
 # *************************************************************************************************
+#                               PARAMETERS and other stuffs
+# -------------------------------------------------------------------------------------------------
 
-start_time = time.perf_counter()
+years_of_history = 50 # back from present
+
+timer_start = time.perf_counter()
 loop = asyncio.get_event_loop()
 
 end_date = pd.to_datetime('today').strftime('%Y-%m-%d')
 start_date = pd.to_datetime('today') - pd.DateOffset(years=years_of_history)
 start_date = start_date.strftime('%Y-%m-%d')
 
+# *************************************************************************************************
+#                                     MAIN CLASS
 # -------------------------------------------------------------------------------------------------
 class Fred:
     def __init__(self, series, observation_start, observation_end):
@@ -104,13 +120,13 @@ class Fred:
         df_results.iloc[-10:] = df_results.iloc[-10:].fillna(method='ffill')
         return df_results
 
+# *************************************************************************************************
+#                               STARTS HERE
 # -------------------------------------------------------------------------------------------------
 
-
-# instantiation
 fred = Fred(series, start_date, end_date)
 # get all the results in a dataframe
 df_results = loop.run_until_complete(fred.get_api_results())
 
 print(df_results)
-print(f"Total time elapsed: {time.perf_counter() - start_time:.2f} seconds")
+print(f"Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds")
