@@ -19,6 +19,20 @@
 # ==> Long Short-Term Memory (LSTM) network (which is a type of RNN). They are able to "remember" important information from earlier in the sequence, which can be useful for predicting future trends based on past data.
 # ==> Convolutional neural networks (CNN) which are particularly well-suited for analyzing data with a spatial structure, and autoencoders, which can be used to identify patterns in high-dimensional data.
 
+# improve by adding more granularity to the data and incorporating other data sources.
+# instead of using the overall GDP, you could use the GDP growth rate or the GDP per capita, which would give you more information about how the economy is performing.
+# credit card transactions
+# Technical indicators such as moving averages, relative strength index (RSI), and stochastic oscillator can be used to identify trends and patterns in stock prices and can help to generate buy and sell signals.
+
+# Central Bank Policy: Central bank policy such as interest rate, quantitative easing, etc can have a significant impact on the stock market. So, you can include data on central bank policy in your model.
+# Economic Indicators: Economic indicators such as Purchasing Manager Index (PMI), Institute for Supply Management (ISM) Index, etc. can provide insights into the health of specific industries and can be used to predict the performance of certain sectors.
+# Political events: Political events such as elections, policy changes, and international relations can also have a significant impact on the stock market. You can include data on political events in your model
+# Commodity prices: Commodity prices such as oil, gold, and others can be used to make predictions about the stock market as they are closely related to the economy.
+# Market volatility: Market volatility can provide insights into investor sentiment and can be used as a feature in your model to predict stock prices.
+
+# LSTM models are not the only option for stock market prediction, other models such as Random Forest, GBM, XGBoost etc. can also be used to generate buy and sell signals. Also, a combination of models such as LSTM with Random Forest can also be used to improve the performance.
+
+
 import asyncio
 import aiohttp
 import time
