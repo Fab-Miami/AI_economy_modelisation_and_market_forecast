@@ -42,3 +42,53 @@ predictions = scaler.inverse_transform(predictions)
 # Evaluate the model using a metric like mean squared error
 mse = mean_squared_error(test_data, predictions)
 print(f'Mean squared error: {mse:.2f}')
+
+# ####################################################################
+# ########### OTHER EXAMPLE ################
+# ##########################################
+
+# Import necessary libraries
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
+from keras.models import Sequential
+from keras.layers import LSTM, Dense, Dropout
+
+# Load the data
+df = pd.read_csv('stock_data.csv')
+
+# Scale the data
+scaler = MinMaxScaler()
+df_scaled = scaler.fit_transform(df)
+
+# Split the data into training and testing sets
+train_size = int(len(df_scaled) * 0.8)
+test_size = len(df_scaled) - train_size
+train, test = df_scaled[0:train_size, :], df_scaled[train_size:len(df_scaled), :]
+
+# Create the LSTM model
+model = Sequential()
+model.add(LSTM(50, return_sequences=True, input_shape=(train.shape[1], 1)))
+model.add(LSTM(50))
+model.add(Dense(1))
+
+# Compile and fit the model
+model.compile(loss='mean_squared_error', optimizer='adam')
+model.fit(train_X, train_y, epochs=100, batch_size=1, verbose=2)
+
+# Make predictions on the test data
+predictions = model.predict(test_X)
+
+# Scale the predictions back to their original values
+predictions = scaler.inverse_transform(predictions)
+
+# Create a new dataframe to store the predictions
+predictions_df = pd.DataFrame(predictions, columns=['Predicted Close'])
+
+# Add a column for the buy and sell signals
+predictions_df['Signal'] = np.where(predictions_df['Predicted Close'].shift(-1) > predictions_df['Predicted Close'], 1, -1)
+
+# Print the buy and sell signals
+print(predictions_df)
+
+
