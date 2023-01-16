@@ -61,6 +61,7 @@ series = [
     {'series_name': 'AAA Bond Rate', 'series_id': 'AAA', 'frequency': 'm'}, # AAA Average Corporate Bond Yield
     {'series_name': 'BAA Bond Rate', 'series_id': 'BAA', 'frequency': 'm'}, # BAA Average Corporate Bond Yield
     {'series_name': 'Money Velocity', 'series_id': 'M1V', 'frequency': 'q'}, # Money Velocity (of spending)
+    {'series_name': 'GDP per capita', 'series_id': 'A939RX0Q048SBEA', 'frequency': 'q'}, # GDP per capita
 ]
 # *************************************************************************************************
 #                               PARAMETERS and other stuffs
@@ -144,3 +145,39 @@ df_results = loop.run_until_complete(fred.get_api_results())
 
 print(df_results)
 print(f"Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds")
+
+import seaborn as sns
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Compute the autocorrelation matrix of the DataFrame
+corr = df_results.corr()
+
+# sns.heatmap(corr, 
+#             xticklabels=corr.columns, 
+#             yticklabels=corr.columns, 
+#             cmap='coolwarm', 
+#             annot=True, 
+#             fmt='.2f', 
+#             vmin=-1, 
+#             vmax=1,
+#             mask=np.triu(np.ones_like(corr, dtype=np.bool)))
+
+ax = sns.heatmap(corr, 
+            xticklabels=corr.columns, 
+            yticklabels=corr.columns, 
+            cmap='coolwarm', 
+            annot=True, 
+            fmt='.2f', 
+            vmin=-1, 
+            vmax=1,
+            mask=np.triu(np.ones_like(corr, dtype=np.bool)),
+            annot_kws={"size": 6}, # make text smaller
+            cbar_kws={'label': 'Correlation'})
+
+# Show the plot
+plt.subplots_adjust(left=0.2, bottom=0.2, right=0.8, top=0.8)
+ax.set_title("Autocorrelation Heatmap", fontsize=10)
+ax.set_xlabel("X-axis", fontsize=8)
+ax.set_ylabel("Y-axis", fontsize=8)
+plt.show()
