@@ -39,15 +39,19 @@ import asyncio
 import aiohttp
 import time
 import pandas as pd
+import seaborn as sns
+import numpy as np
+import matplotlib.pyplot as plt
 
 # *************************************************************************************************
 #                                        SERIES
 # -------------------------------------------------------------------------------------------------
 series = [
-    {'series_name': 'Gross Domestic Product', 'series_id': 'GDPC1', 'frequency': 'q'},
+    {'series_name': 'GDP', 'series_id': 'GDPC1', 'frequency': 'q'}, # Gross Domestic Product
     {'series_name': 'Unemployment Rate', 'series_id': 'UNRATE', 'frequency': 'm'},
     {'series_name': 'Consumer Price Index', 'series_id': 'CPIAUCSL', 'frequency': 'm'}, # Consumer Price Index for All Urban Consumers: All Items in U.S. City Average
-    {'series_name': 'Interest Rate', 'series_id': 'DFF', 'frequency': 'm'},
+    {'series_name': 'Effective Rate', 'series_id': 'DFF', 'frequency': 'm'}, # Effective Federal Funds Rate (effective rate)(actual rate that banks lend and borrow from each other)
+    {'series_name': 'Targeted Rate', 'series_id': 'FEDFUNDS', 'frequency': 'm'}, # Federal Funds Target Rate (rate set by the Federal Reserve)
     {'series_name': 'Corporate Profits', 'series_id': 'CP', 'frequency': 'q'},
     {'series_name': 'NASDAQ', 'series_id': 'NASDAQCOM', 'frequency': 'm'},
     {'series_name': 'NASDAQ100', 'series_id': 'NASDAQ100', 'frequency': 'm'},
@@ -64,6 +68,7 @@ series = [
     {'series_name': 'BAA Bond Rate', 'series_id': 'BAA', 'frequency': 'm'}, # BAA Average Corporate Bond Yield
     {'series_name': 'Money Velocity', 'series_id': 'M1V', 'frequency': 'q'}, # Money Velocity (of spending)
     {'series_name': 'GDP per capita', 'series_id': 'A939RX0Q048SBEA', 'frequency': 'q'}, # GDP per capita
+    {'series_name': 'Credit Card Transactions', 'series_id': 'CCSA', 'frequency': 'm'}, # Credit Card Transactions
 ]
 # *************************************************************************************************
 #                               PARAMETERS and other stuffs
@@ -144,13 +149,13 @@ class Fred:
 fred = Fred(series, start_date, end_date)
 # get all the results in a dataframe
 df_results = loop.run_until_complete(fred.get_api_results())
+df_results.sort_index(axis=1, inplace=True)
 
 print(df_results)
 print(f"Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds")
 
-import seaborn as sns
-import numpy as np
-import matplotlib.pyplot as plt
+
+
 
 # Compute the autocorrelation matrix of the DataFrame
 corr = df_results.corr()
