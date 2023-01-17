@@ -26,8 +26,6 @@
 # credit card transactions
 # Technical indicators such as moving averages, relative strength index (RSI), and stochastic oscillator can be used to identify trends and patterns in stock prices and can help to generate buy and sell signals.
 
-# Central Bank Policy: Central bank policy such as interest rate, quantitative easing, etc can have a significant impact on the stock market. So, you can include data on central bank policy in your model.
-# Economic Indicators: Economic indicators such as Purchasing Manager Index (PMI), Institute for Supply Management (ISM) Index, etc. can provide insights into the health of specific industries and can be used to predict the performance of certain sectors.
 # Political events: Political events such as elections, policy changes, and international relations can also have a significant impact on the stock market. You can include data on political events in your model
 # Commodity prices: Commodity prices such as oil, gold, and others can be used to make predictions about the stock market as they are closely related to the economy.
 # Market volatility: Market volatility can provide insights into investor sentiment and can be used as a feature in your model to predict stock prices.
@@ -42,6 +40,7 @@ import pandas as pd
 import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
+from talib import RSI
 
 # *************************************************************************************************
 #                                        SERIES
@@ -69,7 +68,9 @@ series = [
     {'series_name': 'Money Velocity', 'series_id': 'M1V', 'frequency': 'q'}, # Money Velocity (of spending)
     {'series_name': 'GDP per capita', 'series_id': 'A939RX0Q048SBEA', 'frequency': 'q'}, # GDP per capita
     {'series_name': 'Credit Card Transactions', 'series_id': 'CCSA', 'frequency': 'm'}, # Credit Card Transactions
+    {'series_name': 'PMI Manufacturing', 'series_id': 'MANEMP', 'frequency': 'm'}, # Manufacturing Employment
 ]
+
 # *************************************************************************************************
 #                               PARAMETERS and other stuffs
 # -------------------------------------------------------------------------------------------------
@@ -150,6 +151,7 @@ fred = Fred(series, start_date, end_date)
 # get all the results in a dataframe
 df_results = loop.run_until_complete(fred.get_api_results())
 df_results.sort_index(axis=1, inplace=True)
+df_results['S&P500-RSI'] = RSI(df_results['S&P500'], timeperiod=14)
 
 print(df_results)
 print(f"Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds")
@@ -159,16 +161,6 @@ print(f"Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds")
 
 # Compute the autocorrelation matrix of the DataFrame
 corr = df_results.corr()
-
-# sns.heatmap(corr, 
-#             xticklabels=corr.columns, 
-#             yticklabels=corr.columns, 
-#             cmap='coolwarm', 
-#             annot=True, 
-#             fmt='.2f', 
-#             vmin=-1, 
-#             vmax=1,
-#             mask=np.triu(np.ones_like(corr, dtype=np.bool)))
 
 ax = sns.heatmap(corr, 
             xticklabels=corr.columns, 
