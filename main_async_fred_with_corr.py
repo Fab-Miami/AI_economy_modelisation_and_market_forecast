@@ -40,7 +40,7 @@ import pandas as pd
 import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
-from talib import RSI
+from talib import RSI, MACD, BBANDS
 
 # *************************************************************************************************
 #                                        SERIES
@@ -150,10 +150,31 @@ class Fred:
 fred = Fred(series, start_date, end_date)
 # get all the results in a dataframe
 df_results = loop.run_until_complete(fred.get_api_results())
-df_results.sort_index(axis=1, inplace=True)
+
+# add RSI
 df_results['S&P500-RSI'] = RSI(df_results['S&P500'], timeperiod=14)
 
-print(df_results)
+# add MACD
+df_results['S&P500-MACD'], df_results['S&P500-MACDsignal'], df_results['S&P500-MACDhist'] = MACD(df_results['S&P500'], fastperiod=12, slowperiod=26, signalperiod=9)
+
+# add Bollinger Bands
+df_results['S&P500-BBupper'], df_results['S&P500-BBlower'], df_results['S&P500-BBmiddle'] = BBANDS(df_results['S&P500'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
+
+# get US elections results (DEM = 1 ; REP = 2)
+df_elections = pd.read_csv('USelections.csv')
+df_elections['MONTH'] = pd.to_datetime(df_elections['MONTH'], format='%m/%d/%Y')
+df_elections.index = pd.to_datetime(df_elections["MONTH"])
+df_elections = df_elections.drop("MONTH", axis=1)
+
+# merge elections results with the main dataframe
+df_results = df_results.merge(df_elections, left_index=True, right_on='MONTH')
+
+# ------------------------- sort columns by name -----------------------------
+df_results.sort_index(axis=1, inplace=True)
+
+
+
+print(df_results["House Majority"])
 print(f"Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds")
 
 
