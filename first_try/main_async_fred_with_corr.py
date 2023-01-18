@@ -36,11 +36,11 @@
 import asyncio
 import aiohttp
 import time
+import os
 import pandas as pd
-import seaborn as sns
-import numpy as np
-import matplotlib.pyplot as plt
 from talib import RSI, MACD, BBANDS
+from model_lstm_1 import lstm_1
+from useful_fct import *
 
 # *************************************************************************************************
 #                                        SERIES
@@ -55,7 +55,7 @@ series = [
     {'series_name': 'NASDAQ', 'series_id': 'NASDAQCOM', 'frequency': 'm'},
     {'series_name': 'NASDAQ100', 'series_id': 'NASDAQ100', 'frequency': 'm'},
     {'series_name': 'S&P500', 'series_id': 'SP500', 'frequency': 'm'},
-    {'series_name': 'Dow Jones', 'series_id': 'DJIA', 'frequency': 'm'},
+    # {'series_name': 'Dow Jones', 'series_id': 'DJIA', 'frequency': 'm'},
     {'series_name': 'Consumer Confidence Index', 'series_id': 'CSCICP03USM665S', 'frequency': 'm'}, # Consumer Confidence Index
     {'series_name': 'US Market Cap', 'series_id': 'SPASTT01USM661N', 'frequency': 'm'}, # Total Share Prices for All Shares for the United States
     {'series_name': 'Population', 'series_id': 'POP', 'frequency': 'm'}, # US population
@@ -85,7 +85,7 @@ start_date = pd.to_datetime('today') - pd.DateOffset(years=years_of_history)
 start_date = start_date.strftime('%Y-%m-%d')
 
 # *************************************************************************************************
-#                                     MAIN CLASS
+#                                     FRED CLASS
 # -------------------------------------------------------------------------------------------------
 class Fred:
     def __init__(self, series, observation_start, observation_end):
@@ -144,60 +144,49 @@ class Fred:
         return df_results
 
 # *************************************************************************************************
-#                               STARTS HERE -
+#                                     - STARTS HERE -
 # -------------------------------------------------------------------------------------------------
 
-fred = Fred(series, start_date, end_date)
-# get all the results in a dataframe
-df_results = loop.run_until_complete(fred.get_api_results())
+# check if fred_results.csv exists
+if os.path.isfile('saved_data/fred_results.csv'):
+    # load the results from the csv file
+    df_results = pd.read_csv('saved_data/fred_results.csv', index_col=0)
+    df_results.index = pd.to_datetime(df_results.index)
+    print("============ USING SAVED DATA ============")
+else:
+    # get the results from the FRED API
+    fred = Fred(series, start_date, end_date)
+    # get all the results in a dataframe
+    df_results = loop.run_until_complete(fred.get_api_results())
 
-# add RSI
-df_results['S&P500-RSI'] = RSI(df_results['S&P500'], timeperiod=14)
+    # add RSI
+    df_results['S&P500-RSI'] = RSI(df_results['S&P500'], timeperiod=14)
 
-# add MACD
-df_results['S&P500-MACD'], df_results['S&P500-MACDsignal'], df_results['S&P500-MACDhist'] = MACD(df_results['S&P500'], fastperiod=12, slowperiod=26, signalperiod=9)
+    # add MACD
+    df_results['S&P500-MACD'], df_results['S&P500-MACDsignal'], df_results['S&P500-MACDhist'] = MACD(df_results['S&P500'], fastperiod=12, slowperiod=26, signalperiod=9)
 
-# add Bollinger Bands
-df_results['S&P500-BBupper'], df_results['S&P500-BBlower'], df_results['S&P500-BBmiddle'] = BBANDS(df_results['S&P500'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
+    # add Bollinger Bands
+    df_results['S&P500-BBupper'], df_results['S&P500-BBlower'], df_results['S&P500-BBmiddle'] = BBANDS(df_results['S&P500'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
 
-# get US elections results (DEM = 1 ; REP = 2)
-df_elections = pd.read_csv('USelections.csv')
-df_elections['MONTH'] = pd.to_datetime(df_elections['MONTH'], format='%m/%d/%Y')
-df_elections.index = pd.to_datetime(df_elections["MONTH"])
-df_elections = df_elections.drop("MONTH", axis=1)
+    # get US elections results (DEM = 1 ; REP = 2)
+    df_elections = pd.read_csv('USelections.csv')
+    df_elections['MONTH'] = pd.to_datetime(df_elections['MONTH'], format='%m/%d/%Y')
+    df_elections.index = pd.to_datetime(df_elections["MONTH"])
+    df_elections = df_elections.drop("MONTH", axis=1)
 
-# merge elections results with the main dataframe
-df_results = df_results.merge(df_elections, left_index=True, right_on='MONTH')
+    # merge elections results with the main dataframe
+    df_results = df_results.merge(df_elections, left_index=True, right_on='MONTH')
 
-# ------------------------- sort columns by name -----------------------------
-df_results.sort_index(axis=1, inplace=True)
+    # sort columns by name 
+    df_results.sort_index(axis=1, inplace=True)
+
+    # save results to a csv file
+    df_results.to_csv('saved_data/fred_results.csv')
 
 
-
-print(df_results["House Majority"])
 print(f"Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds")
+print(df_results)
 
+autocorrelation(df_results)
 
-
-
-# Compute the autocorrelation matrix of the DataFrame
-corr = df_results.corr()
-
-ax = sns.heatmap(corr, 
-            xticklabels=corr.columns, 
-            yticklabels=corr.columns, 
-            cmap='coolwarm', 
-            annot=True, 
-            fmt='.2f', 
-            vmin=-1, 
-            vmax=1,
-            mask=np.triu(np.ones_like(corr, dtype=np.bool)),
-            annot_kws={"size": 6}, # make text smaller
-            cbar_kws={'label': 'Correlation'})
-
-# Show the plot
-plt.subplots_adjust(left=0.2, bottom=0.2, right=0.8, top=0.8)
-ax.set_title("Autocorrelation Heatmap", fontsize=10)
-ax.set_xlabel("X-axis", fontsize=8)
-ax.set_ylabel("Y-axis", fontsize=8)
-plt.show()
+plot_columns_scaled(df_results, ['GDP', 'Unemployment Rate'])

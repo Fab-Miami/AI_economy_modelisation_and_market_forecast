@@ -4,8 +4,9 @@
 
 import numpy as np
 import pandas as pd
-from tensorflow.keras.layers import LSTM, Dense
-from tensorflow.keras.models import Sequential
+import tensorflow as tf
+from keras.layers import LSTM, Dense
+from keras.models import Sequential
 
 # Load the economic data and the stock market index data
 economic_data = pd.read_csv('economic_data.csv')
