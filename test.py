@@ -1,15 +1,15 @@
-import pandas as pd
+import requests
+import json
 
-# Create a sample dataframe
-df = pd.DataFrame({'A': [1, 2, 3, 4, 5, 6],
-                   'B': [10, 20, 30, 40, 50, 60],
-                   'C': [100, 200, 300, 400, 500, 600]})
+api_key = "1PeNtzRGtmacF-LgsG6S"
 
-# Add some null values
-df.iloc[2:4, 1] = None
-df.iloc[4:6, 2] = None
+start_date = '1970-01-01'
+end_date = '1970-12-31'
 
-# Fill null values with the last known value, for the last 10 rows
-df.iloc[-10:].fillna(method='ffill', inplace=True)
+url = f"https://www.quandl.com/api/v3/datatables/SHARADAR/SF1?dimension=MRY&ticker=DJIA&date.gte={start_date}&date.lte={end_date}&api_key={api_key}"
 
-print(df)
+url = f"https://data.nasdaq.com/api/v3/datasets/WIKI/AAPL.json?start_date={start_date}&end_date={end_date}&order=asc&column_index=4&collapse=quarterly&transformation=rdiff
+response = requests.get(url)
+dow_data = json.loads(response.text)
+
+print(dow_data)

@@ -34,6 +34,7 @@
 
 import asyncio
 import aiohttp
+import nasdaqdatalink
 import time
 import os
 import yfinance as yf
@@ -45,7 +46,7 @@ from useful_fct import *
 # *************************************************************************************************
 #                                        SERIES
 # -------------------------------------------------------------------------------------------------
-series = [
+fred_series = [
     {'series_name': 'GDP', 'series_id': 'GDPC1', 'frequency': 'q'}, # Gross Domestic Product
     {'series_name': 'GDP per capita', 'series_id': 'A939RX0Q048SBEA', 'frequency': 'q'}, # GDP per capita
 
@@ -54,7 +55,7 @@ series = [
     {'series_name': 'Effective_Rate', 'series_id': 'DFF', 'frequency': 'm'}, # Effective Federal Funds Rate (effective rate)(actual rate that banks lend and borrow from each other)
     # [SAME AS DFF] {'series_name': 'Targeted Rate', 'series_id': 'FEDFUNDS', 'frequency': 'm'}, # Federal Funds Target Rate (rate set by the Federal Reserve) 
     {'series_name': 'Corporate_Profits', 'series_id': 'CP', 'frequency': 'q'},
-    {'series_name': 'NASDAQ', 'series_id': 'NASDAQCOM', 'frequency': 'm'},
+    # {'series_name': 'NASDAQ', 'series_id': 'NASDAQCOM', 'frequency': 'm'}, # better to get it from Yahoo Finance
     # [NO DATA BEFORE 1986, and almost like NASDAQ anyway] {'series_name': 'NASDAQ100', 'series_id': 'NASDAQ100', 'frequency': 'm'},
     # [NO DATA BEFORE FEV 2013] {'series_name': 'Dow Jones', 'series_id': 'DJIA', 'frequency': 'm'},
     {'series_name': 'Consumer_Confidence_Index', 'series_id': 'CSCICP03USM665S', 'frequency': 'm'}, # Consumer Confidence Index
@@ -72,6 +73,10 @@ series = [
     {'series_name': 'Market_Stress', 'series_id': 'STLFSI', 'frequency': 'm'}, # Stress in the U.S. financial system using a variety of market and economic indicators.
 ]
 
+quandl_series = [
+    {'series_name': 'DOW_JONES', 'series_id': 'DJIA', 'frequency': 'm'}, # DOW JONES
+]
+
 # *************************************************************************************************
 #                               PARAMETERS and other stuffs
 # -------------------------------------------------------------------------------------------------
@@ -84,6 +89,24 @@ loop = asyncio.get_event_loop()
 end_date = pd.to_datetime('today').strftime('%Y-%m-%d')
 start_date = pd.to_datetime('today') - pd.DateOffset(years=years_of_history)
 start_date = start_date.strftime('%Y-%m-%d')
+
+# *************************************************************************************************
+#                                     nasdaq.com (quandl.com)
+# -------------------------------------------------------------------------------------------------
+class NasdaqCom:
+    def __init__(self, series, observation_start, observation_end):
+        api_key = "1PeNtzRGtmacF-LgsG6S"
+        self.api_endpoint = f"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&"
+        self.params = {
+            "apikey": api_key,                # defined above
+            "outputsize": "full",             # get the full-size output
+            "datatype": "json",               # return the data in JSON format
+            "start_date": observation_start,  # start date for the data
+            "end_date": observation_end,      # end date for the data
+        }
+        self.series = series
+
+
 
 # *************************************************************************************************
 #                                     FRED CLASS
@@ -137,11 +160,11 @@ class Fred:
         date_range = pd.date_range(start=self.params['observation_start'], end=self.params['observation_end'], freq='MS')
         df_results = pd.DataFrame(index=date_range)
         for task in asyncio.as_completed(tasks): # keeps the order of the results
-            df_result = await task
-            # results.append(df_result)
+            df_result  = await task
             df_results = pd.concat([df_results, df_result], axis=1)
         # as some recent values may not be yet known, we fill the last missing values with the last known value
         df_results.iloc[-10:] = df_results.iloc[-10:].fillna(method='ffill')
+
         return df_results
 
 # *************************************************************************************************
@@ -153,19 +176,31 @@ def get_yahoo_data(start_date):
     dow             = yf.download('^DJI', start=start_date)  # daily data
     sp500           = yf.download('^GSPC', start=start_date) # daily data
     vix             = yf.download('^VIX', start=start_date)  # daily data
+    nasdaq          = yf.download('^IXIC', start=start_date)  # daily data
+
     # resample to monthly
     dow_monthly     = dow.resample('M').mean()
     sp500_monthly   = sp500.resample('M').mean()
     vix_monthly     = vix.resample('M').mean()
+    nasdaq_monthly  = nasdaq.resample('M').mean()
+
     # rename columns
     sp500_monthly.rename(columns={'Close': 'SP500_Close'}, inplace=True)
     sp500_monthly.rename(columns={'Volume': 'SP500_Volume'}, inplace=True)
     dow_monthly.rename(columns={'Close': 'DOW_Close'}, inplace=True)
     dow_monthly.rename(columns={'Volume': 'DOW_Volume'}, inplace=True)
+    nasdaq_monthly.rename(columns={'Close': 'NASDAQ_Close'}, inplace=True)
+    nasdaq_monthly.rename(columns={'Volume': 'NASDAQ_Volume'}, inplace=True)
+    # VIX is not a stock, so no volume
     vix_monthly.rename(columns={'Close': 'VIX_Close'}, inplace=True)
 
-    # retun a dataframe with all the data
-    df_yahoo = pd.concat([dow_monthly['DOW_Close'], dow_monthly['DOW_Volume'], sp500_monthly['SP500_Close'],  sp500_monthly['SP500_Volume'], vix_monthly['VIX_Close']], axis=1)
+    # build dataframe with all the data
+    df_yahoo = pd.concat([dow_monthly['DOW_Close'], dow_monthly['DOW_Volume'], sp500_monthly['SP500_Close'],  sp500_monthly['SP500_Volume'], nasdaq_monthly['NASDAQ_Close'],  nasdaq_monthly['NASDAQ_Volume'], vix_monthly['VIX_Close']], axis=1)
+    df_yahoo = df_yahoo.tz_localize(None)
+
+    # shift index by one day (mean of December is the value of 1st of January)
+    df_yahoo.index = df_yahoo.index + pd.DateOffset(days=1)
+
     return df_yahoo
 
 # *************************************************************************************************
@@ -185,19 +220,15 @@ else:
     # get some data from Yahoo Finance
     df_yahoo = get_yahoo_data(start_date)
 
+    # get data from Alpha Vantage
+    av = AlphaVantage(av_series, start_date, end_date)
+    df_av = av.get_api_results()
+
+
     # get the results from the FRED API
-    fred = Fred(series, start_date, end_date)
+    fred = Fred(fred_series, start_date, end_date)
     # get all the results in a dataframe
     df_results = loop.run_until_complete(fred.get_api_results())
-
-    # add RSI
-    df_results['S&P500-RSI'] = RSI(df_results['S&P500'], timeperiod=14)
-
-    # add MACD
-    df_results['S&P500-MACD'], df_results['S&P500-MACDsignal'], df_results['S&P500-MACDhist'] = MACD(df_results['S&P500'], fastperiod=12, slowperiod=26, signalperiod=9)
-
-    # add Bollinger Bands
-    df_results['S&P500-BBupper'], df_results['S&P500-BBlower'], df_results['S&P500-BBmiddle'] = BBANDS(df_results['S&P500'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
 
     # get US elections results (DEM = 1 ; REP = 2)
     df_elections = pd.read_csv('USelections.csv')
@@ -208,8 +239,32 @@ else:
     # merge elections results with the main dataframe
     df_results = df_results.merge(df_elections, left_index=True, right_on='MONTH')
 
+    print("----------------------------------")
+    print(df_results)
+    print("----------------------------------")
+    print(df_yahoo)
+    print("----------------------------------")
+
+    # merge yahoo data with the main dataframe
+    df_results = df_results.merge(df_yahoo, left_index=True, right_index=True)
+
+    # # add RSI
+    df_results['SP500-RSI'] = RSI(df_results['SP500_Close'], timeperiod=14)
+    df_results['DOW-RSI'] = RSI(df_results['DOW_Close'], timeperiod=14)
+
+    # # add MACD
+    df_results['SP500-MACD'], df_results['SP500-MACDsignal'], df_results['SP500-MACDhist'] = MACD(df_results['SP500_Close'], fastperiod=12, slowperiod=26, signalperiod=9)
+    df_results['DOW-MACD'], df_results['DOW-MACDsignal'], df_results['DOW-MACDhist'] = MACD(df_results['DOW_Close'], fastperiod=12, slowperiod=26, signalperiod=9)
+
+    # # add Bollinger Bands
+    df_results['SP500-BBupper'], df_results['SP500-BBlower'], df_results['SP500-BBmiddle'] = BBANDS(df_results['SP500_Close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
+    df_results['DOW-BBupper'], df_results['DOW-BBlower'], df_results['DOW-BBmiddle'] = BBANDS(df_results['DOW_Close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
+
     # sort columns by name 
     df_results.sort_index(axis=1, inplace=True)
+
+    # backfill missing values
+    df_results.fillna(method='bfill', inplace=True)
 
     # save results to a csv file
     df_results.to_csv('saved_data/fred_results.csv')
@@ -220,5 +275,9 @@ print(df_results.columns)
 
 # autocorrelation(df_results)
 
+column_list =[]
+for column in df_results.columns:
+    column_list.append(column)
+
 # plot_columns_scaled(df_results, ['Unemployment Rate', 'Targeted Rate', 'Effective Rate'])
-plot_columns_scaled(df_results, ['Consumer Confidence Index', 'Credit Card Transactions'])
+plot_columns_scaled(df_results, column_list)
