@@ -32,13 +32,13 @@
 
 # LSTM models are not the only option for stock market prediction, other models such as Random Forest, GBM, XGBoost etc. can also be used to generate buy and sell signals. Also, a combination of models such as LSTM with Random Forest can also be used to improve the performance.
 
-
 import asyncio
 import aiohttp
 import time
 import os
+import yfinance as yf
 import pandas as pd
-from talib import RSI, MACD, BBANDS
+from talib import RSI, MACD, BBANDS # technical analysis library
 from model_lstm_1 import lstm_1
 from useful_fct import *
 
@@ -47,28 +47,29 @@ from useful_fct import *
 # -------------------------------------------------------------------------------------------------
 series = [
     {'series_name': 'GDP', 'series_id': 'GDPC1', 'frequency': 'q'}, # Gross Domestic Product
-    {'series_name': 'Unemployment Rate', 'series_id': 'UNRATE', 'frequency': 'm'},
-    {'series_name': 'Consumer Price Index', 'series_id': 'CPIAUCSL', 'frequency': 'm'}, # Consumer Price Index for All Urban Consumers: All Items in U.S. City Average
-    {'series_name': 'Effective Rate', 'series_id': 'DFF', 'frequency': 'm'}, # Effective Federal Funds Rate (effective rate)(actual rate that banks lend and borrow from each other)
-    {'series_name': 'Targeted Rate', 'series_id': 'FEDFUNDS', 'frequency': 'm'}, # Federal Funds Target Rate (rate set by the Federal Reserve)
-    {'series_name': 'Corporate Profits', 'series_id': 'CP', 'frequency': 'q'},
-    {'series_name': 'NASDAQ', 'series_id': 'NASDAQCOM', 'frequency': 'm'},
-    {'series_name': 'NASDAQ100', 'series_id': 'NASDAQ100', 'frequency': 'm'},
-    {'series_name': 'S&P500', 'series_id': 'SP500', 'frequency': 'm'},
-    # {'series_name': 'Dow Jones', 'series_id': 'DJIA', 'frequency': 'm'},
-    {'series_name': 'Consumer Confidence Index', 'series_id': 'CSCICP03USM665S', 'frequency': 'm'}, # Consumer Confidence Index
-    {'series_name': 'US Market Cap', 'series_id': 'SPASTT01USM661N', 'frequency': 'm'}, # Total Share Prices for All Shares for the United States
-    {'series_name': 'Population', 'series_id': 'POP', 'frequency': 'm'}, # US population
-    {'series_name': 'US Debt', 'series_id': 'GFDEGDQ188S', 'frequency': 'q'}, # US Debt
-    {'series_name': 'US Trade Balance', 'series_id': 'TB3MS', 'frequency': 'm'}, # US Trade Balance
-    {'series_name': 'US Bonds Rate 10y', 'series_id': 'DGS10', 'frequency': 'm'}, # US Bonds Rate 10 years
-    {'series_name': 'US Bonds Rate 1y', 'series_id': 'DGS1', 'frequency': 'm'}, # US Bonds Rate 1 year
-    {'series_name': 'AAA Bond Rate', 'series_id': 'AAA', 'frequency': 'm'}, # AAA Average Corporate Bond Yield
-    {'series_name': 'BAA Bond Rate', 'series_id': 'BAA', 'frequency': 'm'}, # BAA Average Corporate Bond Yield
-    {'series_name': 'Money Velocity', 'series_id': 'M1V', 'frequency': 'q'}, # Money Velocity (of spending)
     {'series_name': 'GDP per capita', 'series_id': 'A939RX0Q048SBEA', 'frequency': 'q'}, # GDP per capita
-    {'series_name': 'Credit Card Transactions', 'series_id': 'CCSA', 'frequency': 'm'}, # Credit Card Transactions
-    {'series_name': 'PMI Manufacturing', 'series_id': 'MANEMP', 'frequency': 'm'}, # Manufacturing Employment
+
+    {'series_name': 'Unemployment_Rate', 'series_id': 'UNRATE', 'frequency': 'm'},
+    {'series_name': 'Consumer_Price_Index', 'series_id': 'CPIAUCSL', 'frequency': 'm'}, # Consumer Price Index for All Urban Consumers: All Items in U.S. City Average
+    {'series_name': 'Effective_Rate', 'series_id': 'DFF', 'frequency': 'm'}, # Effective Federal Funds Rate (effective rate)(actual rate that banks lend and borrow from each other)
+    # [SAME AS DFF] {'series_name': 'Targeted Rate', 'series_id': 'FEDFUNDS', 'frequency': 'm'}, # Federal Funds Target Rate (rate set by the Federal Reserve) 
+    {'series_name': 'Corporate_Profits', 'series_id': 'CP', 'frequency': 'q'},
+    {'series_name': 'NASDAQ', 'series_id': 'NASDAQCOM', 'frequency': 'm'},
+    # [NO DATA BEFORE 1986, and almost like NASDAQ anyway] {'series_name': 'NASDAQ100', 'series_id': 'NASDAQ100', 'frequency': 'm'},
+    # [NO DATA BEFORE FEV 2013] {'series_name': 'Dow Jones', 'series_id': 'DJIA', 'frequency': 'm'},
+    {'series_name': 'Consumer_Confidence_Index', 'series_id': 'CSCICP03USM665S', 'frequency': 'm'}, # Consumer Confidence Index
+    {'series_name': 'US_Market_Cap', 'series_id': 'SPASTT01USM661N', 'frequency': 'm'}, # Total Share Prices for All Shares for the United States
+    {'series_name': 'Population', 'series_id': 'POP', 'frequency': 'm'}, # US population
+    {'series_name': 'US_Debt', 'series_id': 'GFDEGDQ188S', 'frequency': 'q'}, # US Debt
+    {'series_name': 'US_Trade_Balance', 'series_id': 'TB3MS', 'frequency': 'm'}, # US Trade Balance
+    {'series_name': 'US_Bonds_Rate_10y', 'series_id': 'DGS10', 'frequency': 'm'}, # US Bonds Rate 10 years
+    {'series_name': 'US_Bonds_Rate_1y', 'series_id': 'DGS1', 'frequency': 'm'}, # US Bonds Rate 1 year
+    {'series_name': 'AAA_Bond_Rate', 'series_id': 'AAA', 'frequency': 'm'}, # AAA Average Corporate Bond Yield
+    {'series_name': 'BAA_Bond_Rate', 'series_id': 'BAA', 'frequency': 'm'}, # BAA Average Corporate Bond Yield
+    {'series_name': 'Money_Velocity', 'series_id': 'M1V', 'frequency': 'q'}, # Money Velocity (of spending)
+    {'series_name': 'Credit_Card_Transactions', 'series_id': 'CCSA', 'frequency': 'm'}, # Credit Card Transactions
+    {'series_name': 'PMI_Manufacturing', 'series_id': 'MANEMP', 'frequency': 'm'}, # Manufacturing Employment
+    {'series_name': 'Market_Stress', 'series_id': 'STLFSI', 'frequency': 'm'}, # Stress in the U.S. financial system using a variety of market and economic indicators.
 ]
 
 # *************************************************************************************************
@@ -144,6 +145,30 @@ class Fred:
         return df_results
 
 # *************************************************************************************************
+#                                     YAHOO FUNCTION
+# -------------------------------------------------------------------------------------------------
+
+def get_yahoo_data(start_date):
+    # get data from yahoo
+    dow             = yf.download('^DJI', start=start_date)  # daily data
+    sp500           = yf.download('^GSPC', start=start_date) # daily data
+    vix             = yf.download('^VIX', start=start_date)  # daily data
+    # resample to monthly
+    dow_monthly     = dow.resample('M').mean()
+    sp500_monthly   = sp500.resample('M').mean()
+    vix_monthly     = vix.resample('M').mean()
+    # rename columns
+    sp500_monthly.rename(columns={'Close': 'SP500_Close'}, inplace=True)
+    sp500_monthly.rename(columns={'Volume': 'SP500_Volume'}, inplace=True)
+    dow_monthly.rename(columns={'Close': 'DOW_Close'}, inplace=True)
+    dow_monthly.rename(columns={'Volume': 'DOW_Volume'}, inplace=True)
+    vix_monthly.rename(columns={'Close': 'VIX_Close'}, inplace=True)
+
+    # retun a dataframe with all the data
+    df_yahoo = pd.concat([dow_monthly['DOW_Close'], dow_monthly['DOW_Volume'], sp500_monthly['SP500_Close'],  sp500_monthly['SP500_Volume'], vix_monthly['VIX_Close']], axis=1)
+    return df_yahoo
+
+# *************************************************************************************************
 #                                     - STARTS HERE -
 # -------------------------------------------------------------------------------------------------
 
@@ -153,7 +178,13 @@ if os.path.isfile('saved_data/fred_results.csv'):
     df_results = pd.read_csv('saved_data/fred_results.csv', index_col=0)
     df_results.index = pd.to_datetime(df_results.index)
     print("============ USING SAVED DATA ============")
+    df_yahoo = get_yahoo_data(start_date)
+    print(df_yahoo)
+
 else:
+    # get some data from Yahoo Finance
+    df_yahoo = get_yahoo_data(start_date)
+
     # get the results from the FRED API
     fred = Fred(series, start_date, end_date)
     # get all the results in a dataframe
@@ -185,8 +216,9 @@ else:
 
 
 print(f"Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds")
-print(df_results)
+print(df_results.columns)
 
-autocorrelation(df_results)
+# autocorrelation(df_results)
 
-plot_columns_scaled(df_results, ['GDP', 'Unemployment Rate'])
+# plot_columns_scaled(df_results, ['Unemployment Rate', 'Targeted Rate', 'Effective Rate'])
+plot_columns_scaled(df_results, ['Consumer Confidence Index', 'Credit Card Transactions'])
