@@ -1,7 +1,5 @@
 # conda activate py38
 
-# passphrase: azerty
-
 # Gross Domestic Product (GDP): This is a measure of the total economic output of a country. An increase in GDP can be a positive sign for the stock market, as it suggests that the economy is growing.
 # Unemployment rate: This is the percentage of the labor force that is actively seeking employment but unable to find it. A lower unemployment rate can be a positive sign for the stock market, as it suggests that the economy is strong and people are able to find jobs.
 # Inflation rate: This is the rate at which the general level of prices for goods and services is rising, and subsequently, purchasing power is falling. Central banks attempt to limit inflation, and a low inflation rate is generally seen as a positive sign for the stock market.
@@ -41,7 +39,7 @@ import yfinance as yf
 import pandas as pd
 from talib import RSI, MACD, BBANDS # technical analysis library
 from model_lstm_1 import lstm_1
-from useful_fct import *
+from useful_fct import autocorrelation , plot_columns, plot_columns_scaled
 
 # *************************************************************************************************
 #                                        SERIES
@@ -109,9 +107,23 @@ class NasdaqCom:
 
 
 # *************************************************************************************************
-#                                     FRED CLASS
+#                                           FRED
 # -------------------------------------------------------------------------------------------------
-class Fred:
+
+def get_fred_data():
+    if os.path.isfile('saved_data_api/fred_results.csv'):
+        df_fred = pd.read_csv('saved_data_api/fred_results.csv', index_col=0)
+        # df_results.index = pd.to_datetime(df_results.index)
+        print("============ USING FRED SAVED DATA ============")
+    else:
+        fred = FredOnline(fred_series, start_date, end_date)
+        df_fred = loop.run_until_complete(fred.get_api_results())
+        df_fred.to_csv('saved_data_api/fred_results.csv')
+    return df_fred
+
+
+
+class FredOnline:
     def __init__(self, series, observation_start, observation_end):
         api_key = "9e28d63eab23f1dea77320c11110fa4b"
         self.api_endpoint = "https://api.stlouisfed.org/fred/series/observations"
@@ -155,7 +167,7 @@ class Fred:
 
     # run all the api calls in parallel (async)
     async def get_api_results(self):
-        tasks = [fred.get_one_series(**one_series) for one_series in self.series]
+        tasks = [self.get_one_series(**one_series) for one_series in self.series]
         # results is an empty dataframe with the same time range defined in the params
         date_range = pd.date_range(start=self.params['observation_start'], end=self.params['observation_end'], freq='MS')
         df_results = pd.DataFrame(index=date_range)
@@ -164,14 +176,24 @@ class Fred:
             df_results = pd.concat([df_results, df_result], axis=1)
         # as some recent values may not be yet known, we fill the last missing values with the last known value
         df_results.iloc[-10:] = df_results.iloc[-10:].fillna(method='ffill')
+        df_results.index.name = 'Date'
 
         return df_results
 
 # *************************************************************************************************
-#                                     YAHOO FUNCTION
+#                                       YAHOO FINANCE
 # -------------------------------------------------------------------------------------------------
 
-def get_yahoo_data(start_date):
+def get_yahoo_data():
+    if os.path.isfile('saved_data_api/yahoo_results.csv'):
+        df_yahoo = pd.read_csv('saved_data_api/yahoo_results.csv', index_col=0)
+        print("============ USING YAHOO SAVED DATA ============")
+    else:
+        df_yahoo = get_online_yahoo_data(start_date)
+        df_yahoo.to_csv('saved_data_api/yahoo_results.csv')
+    return df_yahoo
+
+def get_online_yahoo_data(start_date):
     # get data from yahoo
     dow             = yf.download('^DJI', start=start_date)  # daily data
     sp500           = yf.download('^GSPC', start=start_date) # daily data
@@ -200,84 +222,71 @@ def get_yahoo_data(start_date):
 
     # shift index by one day (mean of December is the value of 1st of January)
     df_yahoo.index = df_yahoo.index + pd.DateOffset(days=1)
+    df_yahoo.index.name = 'Date'
 
     return df_yahoo
 
 # *************************************************************************************************
+#                                       ELECTION DATA
+# -------------------------------------------------------------------------------------------------
+def get_election_data():
+    # US elections results (DEM = 1 ; REP = 2)
+    df_elections = pd.read_csv('saved_data_static/USelections.csv')
+    df_elections['Date'] = pd.to_datetime(df_elections['Date'], format='%m/%d/%Y')
+    df_elections.index = pd.to_datetime(df_elections["Date"])
+    df_elections = df_elections.drop("Date", axis=1)
+    return df_elections
+
+
+
+# *************************************************************************************************
+# *************************************************************************************************
 #                                     - STARTS HERE -
 # -------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------
 
-# check if fred_results.csv exists
-if os.path.isfile('saved_data/fred_results.csv'):
-    # load the results from the csv file
-    df_results = pd.read_csv('saved_data/fred_results.csv', index_col=0)
-    df_results.index = pd.to_datetime(df_results.index)
-    print("============ USING SAVED DATA ============")
-    df_yahoo = get_yahoo_data(start_date)
-    print(df_yahoo)
+df_fred         = get_fred_data()
+df_yahoo        = get_yahoo_data()
+df_elections    = get_election_data()
 
-else:
-    # get some data from Yahoo Finance
-    df_yahoo = get_yahoo_data(start_date)
+print(df_fred)
+print("--------------------------------")
+print(df_yahoo)
+print("--------------------------------")
+print(df_elections)
 
-    # get data from Alpha Vantage
-    av = AlphaVantage(av_series, start_date, end_date)
-    df_av = av.get_api_results()
+# merge those dataframes
+# result = pd.concat([df1, df2], axis=1, join='inner', keys=['df1', 'df2'], left_on='A', right_on='A')
+# df_results = pd.concat([df_fred, df_yahoo], axis=1, join='inner', keys=['df_fred', 'df_yahoo'], left_on='DATE', right_on='DATE')
+
+# stop script execution here
+import sys
+sys.exit()
 
 
-    # get the results from the FRED API
-    fred = Fred(fred_series, start_date, end_date)
-    # get all the results in a dataframe
-    df_results = loop.run_until_complete(fred.get_api_results())
+# add RSI
+df_results['SP500-RSI'] = RSI(df_results['SP500_Close'], timeperiod=14)
+df_results['DOW-RSI'] = RSI(df_results['DOW_Close'], timeperiod=14)
 
-    # get US elections results (DEM = 1 ; REP = 2)
-    df_elections = pd.read_csv('USelections.csv')
-    df_elections['MONTH'] = pd.to_datetime(df_elections['MONTH'], format='%m/%d/%Y')
-    df_elections.index = pd.to_datetime(df_elections["MONTH"])
-    df_elections = df_elections.drop("MONTH", axis=1)
+# add MACD
+df_results['SP500-MACD'], df_results['SP500-MACDsignal'], df_results['SP500-MACDhist'] = MACD(df_results['SP500_Close'], fastperiod=12, slowperiod=26, signalperiod=9)
+df_results['DOW-MACD'], df_results['DOW-MACDsignal'], df_results['DOW-MACDhist'] = MACD(df_results['DOW_Close'], fastperiod=12, slowperiod=26, signalperiod=9)
 
-    # merge elections results with the main dataframe
-    df_results = df_results.merge(df_elections, left_index=True, right_on='MONTH')
+# add Bollinger Bands
+df_results['SP500-BBupper'], df_results['SP500-BBlower'], df_results['SP500-BBmiddle'] = BBANDS(df_results['SP500_Close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
+df_results['DOW-BBupper'], df_results['DOW-BBlower'], df_results['DOW-BBmiddle'] = BBANDS(df_results['DOW_Close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
 
-    print("----------------------------------")
-    print(df_results)
-    print("----------------------------------")
-    print(df_yahoo)
-    print("----------------------------------")
+# sort columns by name 
+df_results.sort_index(axis=1, inplace=True)
 
-    # merge yahoo data with the main dataframe
-    df_results = df_results.merge(df_yahoo, left_index=True, right_index=True)
-
-    # # add RSI
-    df_results['SP500-RSI'] = RSI(df_results['SP500_Close'], timeperiod=14)
-    df_results['DOW-RSI'] = RSI(df_results['DOW_Close'], timeperiod=14)
-
-    # # add MACD
-    df_results['SP500-MACD'], df_results['SP500-MACDsignal'], df_results['SP500-MACDhist'] = MACD(df_results['SP500_Close'], fastperiod=12, slowperiod=26, signalperiod=9)
-    df_results['DOW-MACD'], df_results['DOW-MACDsignal'], df_results['DOW-MACDhist'] = MACD(df_results['DOW_Close'], fastperiod=12, slowperiod=26, signalperiod=9)
-
-    # # add Bollinger Bands
-    df_results['SP500-BBupper'], df_results['SP500-BBlower'], df_results['SP500-BBmiddle'] = BBANDS(df_results['SP500_Close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
-    df_results['DOW-BBupper'], df_results['DOW-BBlower'], df_results['DOW-BBmiddle'] = BBANDS(df_results['DOW_Close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
-
-    # sort columns by name 
-    df_results.sort_index(axis=1, inplace=True)
-
-    # backfill missing values
-    df_results.fillna(method='bfill', inplace=True)
-
-    # save results to a csv file
-    df_results.to_csv('saved_data/fred_results.csv')
+# backfill missing values
+df_results.fillna(method='bfill', inplace=True)
 
 
 print(f"Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds")
 print(df_results.columns)
 
+
 # autocorrelation(df_results)
-
-column_list =[]
-for column in df_results.columns:
-    column_list.append(column)
-
 # plot_columns_scaled(df_results, ['Unemployment Rate', 'Targeted Rate', 'Effective Rate'])
-plot_columns_scaled(df_results, column_list)
+plot_columns_scaled(df_results)

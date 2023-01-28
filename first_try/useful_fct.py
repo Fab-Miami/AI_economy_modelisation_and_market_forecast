@@ -14,9 +14,18 @@ def plot_columns(df, col_names):
     plt.legend()
     plt.show(block=False)
 
-def plot_columns_scaled(df, col_names):
+def plot_columns_scaled(df, column_list=[]):
+
+    if len(column_list) == 0:
+        column_list =[]
+        for column in df.columns:
+            column_list.append(column)
+        col_names = column_list
+    else:
+        col_names = column_list
+
     plt.figure(figsize=(10, 8))
-    for col_name in col_names:
+    for col_name in df.columns:
         data = df[col_name]
         # Scale the data between 0 and 1
         data_scaled = (data - data.min()) / (data.max() - data.min())
