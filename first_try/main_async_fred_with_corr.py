@@ -12,7 +12,7 @@
 # Business investment: Business investment, which includes spending on things like machinery, equipment, and buildings, can also be a key driver of economic growth. Factors that can affect business investment include expectations about future demand, access to capital, and the cost of borrowing.
 # International trade: The United States is a major player in the global economy and international trade can have a significant impact on the domestic economy. Factors that can affect international trade include exchange rates, tariffs, and economic conditions in other countries.
 # debt
-# trade balances
+# trade balances 
 # bonds rates
 # Consumer Confidence Index (CCI)
 # Corporate earnings
