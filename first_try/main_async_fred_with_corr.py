@@ -177,6 +177,7 @@ class FredOnline:
         # as some recent values may not be yet known, we fill the last missing values with the last known value
         df_results.iloc[-10:] = df_results.iloc[-10:].fillna(method='ffill')
         df_results.index.name = 'Date'
+        df_results.index = pd.to_datetime(df_results.index)
 
         return df_results
 
@@ -223,6 +224,8 @@ def get_online_yahoo_data(start_date):
     # shift index by one day (mean of December is the value of 1st of January)
     df_yahoo.index = df_yahoo.index + pd.DateOffset(days=1)
     df_yahoo.index.name = 'Date'
+    df_yahoo.index = pd.to_datetime(df_yahoo.index)
+
 
     return df_yahoo
 
@@ -232,7 +235,7 @@ def get_online_yahoo_data(start_date):
 def get_election_data():
     # US elections results (DEM = 1 ; REP = 2)
     df_elections = pd.read_csv('saved_data_static/USelections.csv')
-    df_elections['Date'] = pd.to_datetime(df_elections['Date'], format='%m/%d/%Y')
+    df_elections['Date'] = pd.to_datetime(df_elections['Date'], format='%Y-%m-%d')
     df_elections.index = pd.to_datetime(df_elections["Date"])
     df_elections = df_elections.drop("Date", axis=1)
     return df_elections
@@ -251,13 +254,27 @@ df_elections    = get_election_data()
 
 print(df_fred)
 print("--------------------------------")
+print(df_fred.index.dtype)
+print("================================")
+
 print(df_yahoo)
 print("--------------------------------")
+print(df_yahoo.index.dtype)
+print("================================")
+
 print(df_elections)
+print("--------------------------------")
+print(df_elections.index.dtype)
+print("================================")
 
 # merge those dataframes
-# result = pd.concat([df1, df2], axis=1, join='inner', keys=['df1', 'df2'], left_on='A', right_on='A')
-# df_results = pd.concat([df_fred, df_yahoo], axis=1, join='inner', keys=['df_fred', 'df_yahoo'], left_on='DATE', right_on='DATE')
+df_results = pd.concat([df_fred, df_yahoo], axis=1, join='inner')
+df_results = pd.concat([df_results, df_elections], axis=1, join='inner')
+
+
+print("--------------------------------")
+print("--------------------------------")
+print(df_results)
 
 # stop script execution here
 import sys
