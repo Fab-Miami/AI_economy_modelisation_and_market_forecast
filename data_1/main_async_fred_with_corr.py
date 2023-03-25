@@ -30,6 +30,10 @@
 
 # LSTM models are not the only option for stock market prediction, other models such as Random Forest, GBM, XGBoost etc. can also be used to generate buy and sell signals. Also, a combination of models such as LSTM with Random Forest can also be used to improve the performance.
 
+#
+#  conda activate py38
+#
+
 import asyncio
 import aiohttp
 import nasdaqdatalink
@@ -89,7 +93,7 @@ start_date = pd.to_datetime('today') - pd.DateOffset(years=years_of_history)
 start_date = start_date.strftime('%Y-%m-%d')
 
 # *************************************************************************************************
-#                                     nasdaq.com (quandl.com)
+#                                     NASDAQ.COM (quandl.com)
 # -------------------------------------------------------------------------------------------------
 class NasdaqCom:
     def __init__(self, series, observation_start, observation_end):
@@ -110,18 +114,16 @@ class NasdaqCom:
 #                                           FRED
 # -------------------------------------------------------------------------------------------------
 
-def get_fred_data():
-    if os.path.isfile('saved_data_api/fred_results.csv'):
-        df_fred = pd.read_csv('saved_data_api/fred_results.csv', index_col=0)
+def get_fred_data(fred_series, start_date, end_date, loop, file_path = 'saved_data_api/fred_results.csv'):
+    if os.path.isfile(file_path):
+        df_fred = pd.read_csv(file_path, index_col=0)
         # df_results.index = pd.to_datetime(df_results.index)
         print("============ USING FRED SAVED DATA ============")
     else:
         fred = FredOnline(fred_series, start_date, end_date)
         df_fred = loop.run_until_complete(fred.get_api_results())
-        df_fred.to_csv('saved_data_api/fred_results.csv')
+        df_fred.to_csv(file_path)
     return df_fred
-
-
 
 class FredOnline:
     def __init__(self, series, observation_start, observation_end):
@@ -185,20 +187,20 @@ class FredOnline:
 #                                       YAHOO FINANCE
 # -------------------------------------------------------------------------------------------------
 
-def get_yahoo_data():
-    if os.path.isfile('saved_data_api/yahoo_results.csv'):
-        df_yahoo = pd.read_csv('saved_data_api/yahoo_results.csv', index_col=0)
+def get_yahoo_data(start_date, file_path='saved_data_api/yahoo_results.csv'):
+    if os.path.isfile(file_path):
+        df_yahoo = pd.read_csv(file_path, index_col=0)
         print("============ USING YAHOO SAVED DATA ============")
     else:
         df_yahoo = get_online_yahoo_data(start_date)
-        df_yahoo.to_csv('saved_data_api/yahoo_results.csv')
+        df_yahoo.to_csv(file_path)
     return df_yahoo
 
 def get_online_yahoo_data(start_date):
     # get data from yahoo
-    dow             = yf.download('^DJI', start=start_date)  # daily data
-    sp500           = yf.download('^GSPC', start=start_date) # daily data
-    vix             = yf.download('^VIX', start=start_date)  # daily data
+    dow             = yf.download('^DJI', start=start_date)   # daily data
+    sp500           = yf.download('^GSPC', start=start_date)  # daily data
+    vix             = yf.download('^VIX', start=start_date)   # daily data
     nasdaq          = yf.download('^IXIC', start=start_date)  # daily data
 
     # resample to monthly
@@ -226,7 +228,6 @@ def get_online_yahoo_data(start_date):
     df_yahoo.index.name = 'Date'
     df_yahoo.index = pd.to_datetime(df_yahoo.index)
 
-
     return df_yahoo
 
 # *************************************************************************************************
@@ -239,8 +240,6 @@ def get_election_data():
     df_elections.index = pd.to_datetime(df_elections["Date"])
     df_elections = df_elections.drop("Date", axis=1)
     return df_elections
-
-
 
 # *************************************************************************************************
 # *************************************************************************************************

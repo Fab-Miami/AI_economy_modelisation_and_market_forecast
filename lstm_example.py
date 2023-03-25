@@ -93,3 +93,4 @@ predictions_df['Signal'] = np.where(predictions_df['Predicted Close'].shift(-1) 
 print(predictions_df)
 
 
+9c46f52e61fbba25f34492d5ba7b4e3ffa6ee8c4.rtfd
