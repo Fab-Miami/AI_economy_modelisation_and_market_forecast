@@ -45,7 +45,7 @@ from talib import RSI, MACD, BBANDS # technical analysis library
 from useful_fct import autocorrelation , plot_columns, plot_columns_scaled
 
 # *************************************************************************************************
-#                                        SERIES
+#                                DIFFERENT SOURCES OF SERIES
 # -------------------------------------------------------------------------------------------------
 fred_series = [
     {'series_name': 'GDP', 'series_id': 'GDPC1', 'frequency': 'q'}, # Gross Domestic Product
@@ -118,7 +118,7 @@ def get_fred_data():
     if os.path.isfile(file_path):
         df_fred = pd.read_csv(file_path, index_col=0)
         # df_results.index = pd.to_datetime(df_results.index)
-        print("============ USING FRED SAVED DATA ============")
+        print("============> USING FRED SAVED DATA")
     else:
         fred = FredOnline(fred_series, start_date, end_date)
         df_fred = loop.run_until_complete(fred.get_api_results())
@@ -191,7 +191,7 @@ def get_yahoo_data():
     file_path='saved_data_api/yahoo_results.csv'
     if os.path.isfile(file_path):
         df_yahoo = pd.read_csv(file_path, index_col=0)
-        print("============ USING YAHOO SAVED DATA ============")
+        print("============> USING YAHOO SAVED DATA")
     else:
         df_yahoo = get_online_yahoo_data(start_date)
         df_yahoo.to_csv(file_path)
@@ -252,28 +252,46 @@ df_fred         = get_fred_data()
 df_yahoo        = get_yahoo_data()
 df_elections    = get_election_data()
 
+print("\n\n------------- FRED -------------")
 print(df_fred)
-print("--------------------------------")
-print(df_fred.index.dtype)
+print("-----------------")
+print("df_fred.index", df_fred.index)
+print("\ndf_fred.columns", df_fred.columns)
 print("================================")
 
+print("------------- YAHOO -------------")
 print(df_yahoo)
-print("--------------------------------")
-print(df_yahoo.index.dtype)
+print("-----------------")
+print("df_yahoo.index", df_yahoo.index)
+print("\ndf_yahoo.columns", df_yahoo.columns)
 print("================================")
 
+print("------------- ELECTIONS -------------")
 print(df_elections)
-print("--------------------------------")
-print(df_elections.index.dtype)
+print("-----------------")
+print("df_elections.index", df_elections.index)
+print("\ndf_elections.columns", df_elections.columns)
 print("================================")
 
 # merge those dataframes
 df_results = pd.concat([df_fred, df_yahoo], axis=1, join='inner')
+df_results.index = pd.to_datetime(df_results.index)
+
+print("\n\n-1--------------------------------------------------------------------------------------------")
+print("df_results = ", df_results)
+print("\ndf_results.index", df_results.index)
+print("\ndf_results.columns", df_results.columns)
+print("---------------------------------------------------------------------------------------------")
+
+
 df_results = pd.concat([df_results, df_elections], axis=1, join='inner')
 
 
-print("\n\n---------------------------------------------------------------------------------------------")
+print("\n\n-2--------------------------------------------------------------------------------------------")
 print("df_results = ", df_results)
+print("\ndf_results.index", df_results.index)
+print("\ndf_results.columns", df_results.columns)
+print("\nNumber of columns = ", len(df_results.columns))
 print("---------------------------------------------------------------------------------------------")
 
 
