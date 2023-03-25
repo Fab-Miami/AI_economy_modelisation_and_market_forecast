@@ -42,7 +42,6 @@ import os
 import yfinance as yf
 import pandas as pd
 from talib import RSI, MACD, BBANDS # technical analysis library
-from model_lstm_1 import lstm_1
 from useful_fct import autocorrelation , plot_columns, plot_columns_scaled
 
 # *************************************************************************************************
@@ -114,7 +113,8 @@ class NasdaqCom:
 #                                           FRED
 # -------------------------------------------------------------------------------------------------
 
-def get_fred_data(fred_series, start_date, end_date, loop, file_path = 'saved_data_api/fred_results.csv'):
+def get_fred_data():
+    file_path = 'saved_data_api/fred_results.csv'
     if os.path.isfile(file_path):
         df_fred = pd.read_csv(file_path, index_col=0)
         # df_results.index = pd.to_datetime(df_results.index)
@@ -187,7 +187,8 @@ class FredOnline:
 #                                       YAHOO FINANCE
 # -------------------------------------------------------------------------------------------------
 
-def get_yahoo_data(start_date, file_path='saved_data_api/yahoo_results.csv'):
+def get_yahoo_data():
+    file_path='saved_data_api/yahoo_results.csv'
     if os.path.isfile(file_path):
         df_yahoo = pd.read_csv(file_path, index_col=0)
         print("============ USING YAHOO SAVED DATA ============")
@@ -271,9 +272,10 @@ df_results = pd.concat([df_fred, df_yahoo], axis=1, join='inner')
 df_results = pd.concat([df_results, df_elections], axis=1, join='inner')
 
 
-print("--------------------------------")
-print("--------------------------------")
-print(df_results)
+print("\n\n---------------------------------------------------------------------------------------------")
+print("df_results = ", df_results)
+print("---------------------------------------------------------------------------------------------")
+
 
 # stop script execution here
 import sys
