@@ -114,10 +114,10 @@ class NasdaqCom:
 # -------------------------------------------------------------------------------------------------
 
 def get_fred_data():
-    file_path = 'saved_data_api/fred_results.csv'
+    file_path = 'saved_data_from_api/fred_results.csv'
     if os.path.isfile(file_path):
         df_fred = pd.read_csv(file_path, index_col=0)
-        # df_results.index = pd.to_datetime(df_results.index)
+        df_fred.index = pd.to_datetime(df_fred.index)
         print("============> USING FRED SAVED DATA")
     else:
         fred = FredOnline(fred_series, start_date, end_date)
@@ -172,25 +172,26 @@ class FredOnline:
         tasks = [self.get_one_series(**one_series) for one_series in self.series]
         # results is an empty dataframe with the same time range defined in the params
         date_range = pd.date_range(start=self.params['observation_start'], end=self.params['observation_end'], freq='MS')
-        df_results = pd.DataFrame(index=date_range)
+        df_data = pd.DataFrame(index=date_range)
         for task in asyncio.as_completed(tasks): # keeps the order of the results
             df_result  = await task
-            df_results = pd.concat([df_results, df_result], axis=1)
+            df_data = pd.concat([df_data, df_result], axis=1)
         # as some recent values may not be yet known, we fill the last missing values with the last known value
-        df_results.iloc[-10:] = df_results.iloc[-10:].fillna(method='ffill')
-        df_results.index.name = 'Date'
-        df_results.index = pd.to_datetime(df_results.index)
+        df_data.iloc[-10:] = df_data.iloc[-10:].fillna(method='ffill')
+        df_data.index.name = 'Date'
+        df_data.index = pd.to_datetime(df_data.index)
 
-        return df_results
+        return df_data
 
 # *************************************************************************************************
 #                                       YAHOO FINANCE
 # -------------------------------------------------------------------------------------------------
 
 def get_yahoo_data():
-    file_path='saved_data_api/yahoo_results.csv'
+    file_path='saved_data_from_api/yahoo_results.csv'
     if os.path.isfile(file_path):
         df_yahoo = pd.read_csv(file_path, index_col=0)
+        df_yahoo.index = pd.to_datetime(df_yahoo.index)
         print("============> USING YAHOO SAVED DATA")
     else:
         df_yahoo = get_online_yahoo_data(start_date)
@@ -236,11 +237,33 @@ def get_online_yahoo_data(start_date):
 # -------------------------------------------------------------------------------------------------
 def get_election_data():
     # US elections results (DEM = 1 ; REP = 2)
-    df_elections = pd.read_csv('saved_data_static/USelections.csv')
+    df_elections = pd.read_csv('saved_data_from_static/USelections.csv')
     df_elections['Date'] = pd.to_datetime(df_elections['Date'], format='%Y-%m-%d')
     df_elections.index = pd.to_datetime(df_elections["Date"])
     df_elections = df_elections.drop("Date", axis=1)
-    return df_elections
+
+    df_elections_encoded = one_hot_encode_elections(df_elections)
+
+    return df_elections_encoded
+
+def one_hot_encode_elections(df):
+    # One-hot encode the categorical columns
+    df_encoded = pd.get_dummies(df, columns=['House Majority', 'Senate Majority', 'Presidency'])
+    
+    # Rename the columns for better readability
+    column_mapping = {
+        'House Majority_1': 'House_DEM',
+        'House Majority_2': 'House_REP',
+        'Senate Majority_1': 'Senate_DEM',
+        'Senate Majority_2': 'Senate_REP',
+        'Presidency_1': 'President_DEM',
+        'Presidency_2': 'President_REP'
+    }
+    
+    df_encoded.rename(columns=column_mapping, inplace=True)
+    return df_encoded
+
+
 
 # *************************************************************************************************
 # *************************************************************************************************
@@ -274,55 +297,63 @@ print("\ndf_elections.columns", df_elections.columns)
 print("================================")
 
 # merge those dataframes
-df_results = pd.concat([df_fred, df_yahoo], axis=1, join='inner')
-df_results.index = pd.to_datetime(df_results.index)
+df_data = pd.concat([df_fred, df_yahoo], axis=1, join='outer')
+df_data = pd.concat([df_data, df_elections], axis=1, join='outer')
 
-print("\n\n-1--------------------------------------------------------------------------------------------")
-print("df_results = ", df_results)
-print("\ndf_results.index", df_results.index)
-print("\ndf_results.columns", df_results.columns)
+
+
+print("\n\n---------------------------------------------------------------------------------------------")
+print("df_data = ", df_data)
+print("\ndf_data.index", df_data.index)
+print("\ndf_data.columns", df_data.columns)
+print("\nNumber of columns = ", len(df_data.columns))
 print("---------------------------------------------------------------------------------------------")
 
 
-df_results = pd.concat([df_results, df_elections], axis=1, join='inner')
-
-
-print("\n\n-2--------------------------------------------------------------------------------------------")
-print("df_results = ", df_results)
-print("\ndf_results.index", df_results.index)
-print("\ndf_results.columns", df_results.columns)
-print("\nNumber of columns = ", len(df_results.columns))
-print("---------------------------------------------------------------------------------------------")
-
-
-# stop script execution here
-import sys
-sys.exit()
+# # stop script execution here
+# import sys
+# sys.exit()
 
 
 # add RSI
-df_results['SP500-RSI'] = RSI(df_results['SP500_Close'], timeperiod=14)
-df_results['DOW-RSI'] = RSI(df_results['DOW_Close'], timeperiod=14)
+df_data['SP500-RSI'] = RSI(df_data['SP500_Close'], timeperiod=14)
+df_data['DOW-RSI'] = RSI(df_data['DOW_Close'], timeperiod=14)
 
 # add MACD
-df_results['SP500-MACD'], df_results['SP500-MACDsignal'], df_results['SP500-MACDhist'] = MACD(df_results['SP500_Close'], fastperiod=12, slowperiod=26, signalperiod=9)
-df_results['DOW-MACD'], df_results['DOW-MACDsignal'], df_results['DOW-MACDhist'] = MACD(df_results['DOW_Close'], fastperiod=12, slowperiod=26, signalperiod=9)
+df_data['SP500-MACD'], df_data['SP500-MACDsignal'], df_data['SP500-MACDhist'] = MACD(df_data['SP500_Close'], fastperiod=12, slowperiod=26, signalperiod=9)
+df_data['DOW-MACD'], df_data['DOW-MACDsignal'], df_data['DOW-MACDhist'] = MACD(df_data['DOW_Close'], fastperiod=12, slowperiod=26, signalperiod=9)
 
 # add Bollinger Bands
-df_results['SP500-BBupper'], df_results['SP500-BBlower'], df_results['SP500-BBmiddle'] = BBANDS(df_results['SP500_Close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
-df_results['DOW-BBupper'], df_results['DOW-BBlower'], df_results['DOW-BBmiddle'] = BBANDS(df_results['DOW_Close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
+df_data['SP500-BBupper'], df_data['SP500-BBlower'], df_data['SP500-BBmiddle'] = BBANDS(df_data['SP500_Close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
+df_data['DOW-BBupper'], df_data['DOW-BBlower'], df_data['DOW-BBmiddle'] = BBANDS(df_data['DOW_Close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
 
 # sort columns by name 
-df_results.sort_index(axis=1, inplace=True)
+df_data.sort_index(axis=1, inplace=True)
 
 # backfill missing values
-df_results.fillna(method='bfill', inplace=True)
+df_data.fillna(method='bfill', inplace=True)
+
+# Fill NaNs with interpolated values
+print("\n\nNans in df_data before interpolation = ", df_data.isnull().sum().sum())
+df_data.interpolate(method='linear', inplace=True)
+print("Number of Nans after interpolation = ", df_data.isnull().sum().sum(), "\n\n")
 
 
 print(f"Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds")
-print(df_results.columns)
+print(df_data.columns)
 
 
-# autocorrelation(df_results)
-# plot_columns_scaled(df_results, ['Unemployment Rate', 'Targeted Rate', 'Effective Rate'])
-plot_columns_scaled(df_results)
+print("\n\n---------------------------------------------------------------------------------------------")
+print("df_data = ", df_data)
+print("\ndf_data.index", df_data.index)
+print("\ndf_data.columns", df_data.columns)
+print("\nNumber of columns = ", len(df_data.columns))
+print("---------------------------------------------------------------------------------------------")
+
+
+# ------------------------- OUTPUT -----------------------
+# uncomment some of all of the following to see df_data
+#
+autocorrelation(df_data)
+# plot_columns_scaled(df_data, ['Unemployment Rate', 'Targeted Rate', 'Effective Rate'])
+#plot_columns_scaled(df_data)
