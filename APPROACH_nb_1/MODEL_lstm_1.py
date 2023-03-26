@@ -1,20 +1,34 @@
+import sys
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, LSTM, Dropout
+from tensorflow.keras.models import load_model
+from MAIN_building_input_df_data import create_dataframes
 
-# Assuming the data is stored in a DataFrame named 'df_results'
-# and the SPY data is in a column called 'SP500_Close'
+
+
+# GET df_data from MAIN_building_input_df_data.py
+df_data_data = create_dataframes()
+
+print("-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_")
+print(df_data_data.head())
+
+
+# stop script execution here
+
+sys.exit()
+
 
 # Step 1: Preprocess the data
-df = df_results.dropna()
+df_data = df_data_data.dropna()
 
 # Step 2: Split the data into training and testing sets
-train_size = int(len(df) * 0.8)
-train_data = df.iloc[:train_size]
-test_data = df.iloc[train_size:]
+train_size = int(len(df_data) * 0.8)
+train_data = df_data.iloc[:train_size]
+test_data = df_data.iloc[train_size:]
 
 # Step 3: Normalize the data
 scaler = MinMaxScaler(feature_range=(0, 1))
@@ -65,8 +79,8 @@ print(f'Mean squared error: {mse}')
 import matplotlib.pyplot as plt
 
 plt.figure(figsize=(16, 8))
-plt.plot(df.index[train_size + look_back + 1:], test_data['SP500_Close'].iloc[look_back + 1:], label='Actual')
-plt.plot(df.index[train_size + look_back + 1:], predicted_prices[look_back + 1:], label='Predicted')
+plt.plot(df_data.index[train_size + look_back + 1:], test_data['SP500_Close'].iloc[look_back + 1:], label='Actual')
+plt.plot(df_data.index[train_size + look_back + 1:], predicted_prices[look_back + 1:], label='Predicted')
 plt.xlabel('Date')
 plt.ylabel('Price')
 plt.legend()

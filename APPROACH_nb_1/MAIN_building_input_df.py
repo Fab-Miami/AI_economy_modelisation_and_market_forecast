@@ -37,12 +37,13 @@
 import asyncio
 import aiohttp
 import nasdaqdatalink
+import numpy as np
 import time
 import os
 import yfinance as yf
 import pandas as pd
 from talib import RSI, MACD, BBANDS # technical analysis library
-from useful_fct import autocorrelation , plot_columns, plot_columns_scaled
+from tool_fct import autocorrelation , plot_columns, plot_columns_scaled
 
 # *************************************************************************************************
 #                                DIFFERENT SOURCES OF SERIES
@@ -271,89 +272,109 @@ def one_hot_encode_elections(df):
 # -------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------
 
-df_fred         = get_fred_data()
-df_yahoo        = get_yahoo_data()
-df_elections    = get_election_data()
+def create_dataframes():
+    df_fred         = get_fred_data()
+    df_yahoo        = get_yahoo_data()
+    df_elections    = get_election_data()
 
-print("\n\n------------- FRED -------------")
-print(df_fred)
-print("-----------------")
-print("df_fred.index", df_fred.index)
-print("\ndf_fred.columns", df_fred.columns)
-print("================================")
+    print("\n\n------------- FRED -------------")
+    print(df_fred)
+    print("-----------------")
+    print("df_fred.index", df_fred.index)
+    print("\ndf_fred.columns", df_fred.columns)
+    print("================================")
 
-print("------------- YAHOO -------------")
-print(df_yahoo)
-print("-----------------")
-print("df_yahoo.index", df_yahoo.index)
-print("\ndf_yahoo.columns", df_yahoo.columns)
-print("================================")
+    print("------------- YAHOO -------------")
+    print(df_yahoo)
+    print("-----------------")
+    print("df_yahoo.index", df_yahoo.index)
+    print("\ndf_yahoo.columns", df_yahoo.columns)
+    print("================================")
 
-print("------------- ELECTIONS -------------")
-print(df_elections)
-print("-----------------")
-print("df_elections.index", df_elections.index)
-print("\ndf_elections.columns", df_elections.columns)
-print("================================")
+    print("------------- ELECTIONS -------------")
+    print(df_elections)
+    print("-----------------")
+    print("df_elections.index", df_elections.index)
+    print("\ndf_elections.columns", df_elections.columns)
+    print("================================")
 
-# merge those dataframes
-df_data = pd.concat([df_fred, df_yahoo], axis=1, join='outer')
-df_data = pd.concat([df_data, df_elections], axis=1, join='outer')
-
-
-
-print("\n\n---------------------------------------------------------------------------------------------")
-print("df_data = ", df_data)
-print("\ndf_data.index", df_data.index)
-print("\ndf_data.columns", df_data.columns)
-print("\nNumber of columns = ", len(df_data.columns))
-print("---------------------------------------------------------------------------------------------")
+    # merge those dataframes
+    df_data = pd.concat([df_fred, df_yahoo], axis=1, join='outer')
 
 
-# # stop script execution here
-# import sys
-# sys.exit()
+    # now take log and diff of all those data
+    df_data = df_data.apply(np.log)
+
+    # Calculate the difference between consecutive rows for each column in-place
+    df_data = df_data.diff().dropna()
 
 
-# add RSI
-df_data['SP500-RSI'] = RSI(df_data['SP500_Close'], timeperiod=14)
-df_data['DOW-RSI'] = RSI(df_data['DOW_Close'], timeperiod=14)
+    # add elections data
+    df_data = pd.concat([df_data, df_elections], axis=1, join='outer')
 
-# add MACD
-df_data['SP500-MACD'], df_data['SP500-MACDsignal'], df_data['SP500-MACDhist'] = MACD(df_data['SP500_Close'], fastperiod=12, slowperiod=26, signalperiod=9)
-df_data['DOW-MACD'], df_data['DOW-MACDsignal'], df_data['DOW-MACDhist'] = MACD(df_data['DOW_Close'], fastperiod=12, slowperiod=26, signalperiod=9)
-
-# add Bollinger Bands
-df_data['SP500-BBupper'], df_data['SP500-BBlower'], df_data['SP500-BBmiddle'] = BBANDS(df_data['SP500_Close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
-df_data['DOW-BBupper'], df_data['DOW-BBlower'], df_data['DOW-BBmiddle'] = BBANDS(df_data['DOW_Close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
-
-# sort columns by name 
-df_data.sort_index(axis=1, inplace=True)
-
-# backfill missing values
-df_data.fillna(method='bfill', inplace=True)
-
-# Fill NaNs with interpolated values
-print("\n\nNans in df_data before interpolation = ", df_data.isnull().sum().sum())
-df_data.interpolate(method='linear', inplace=True)
-print("Number of Nans after interpolation = ", df_data.isnull().sum().sum(), "\n\n")
+    
 
 
-print(f"Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds")
-print(df_data.columns)
+    print("\n\n---------------------------------------------------------------------------------------------")
+    print("df_data = ", df_data)
+    print("\ndf_data.index", df_data.index)
+    print("\ndf_data.columns", df_data.columns)
+    print("\nNumber of columns = ", len(df_data.columns))
+    print("---------------------------------------------------------------------------------------------")
 
 
-print("\n\n---------------------------------------------------------------------------------------------")
-print("df_data = ", df_data)
-print("\ndf_data.index", df_data.index)
-print("\ndf_data.columns", df_data.columns)
-print("\nNumber of columns = ", len(df_data.columns))
-print("---------------------------------------------------------------------------------------------")
 
 
-# ------------------------- OUTPUT -----------------------
-# uncomment some of all of the following to see df_data
-#
-autocorrelation(df_data)
-# plot_columns_scaled(df_data, ['Unemployment Rate', 'Targeted Rate', 'Effective Rate'])
-#plot_columns_scaled(df_data)
+    # add RSI
+    df_data['SP500-RSI'] = RSI(df_data['SP500_Close'], timeperiod=14)
+    df_data['DOW-RSI'] = RSI(df_data['DOW_Close'], timeperiod=14)
+
+    # add MACD
+    df_data['SP500-MACD'], df_data['SP500-MACDsignal'], df_data['SP500-MACDhist'] = MACD(df_data['SP500_Close'], fastperiod=12, slowperiod=26, signalperiod=9)
+    df_data['DOW-MACD'], df_data['DOW-MACDsignal'], df_data['DOW-MACDhist'] = MACD(df_data['DOW_Close'], fastperiod=12, slowperiod=26, signalperiod=9)
+
+    # add Bollinger Bands
+    df_data['SP500-BBupper'], df_data['SP500-BBlower'], df_data['SP500-BBmiddle'] = BBANDS(df_data['SP500_Close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
+    df_data['DOW-BBupper'], df_data['DOW-BBlower'], df_data['DOW-BBmiddle'] = BBANDS(df_data['DOW_Close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
+
+    # sort columns by name 
+    df_data.sort_index(axis=1, inplace=True)
+
+    # backfill missing values
+    df_data.fillna(method='bfill', inplace=True)
+
+    # Fill NaNs with interpolated values
+    print("\n\nNans in df_data before interpolation = ", df_data.isnull().sum().sum())
+    df_data.interpolate(method='linear', inplace=True)
+    print("Number of Nans after interpolation = ", df_data.isnull().sum().sum(), "\n\n")
+
+
+    print(f"Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds")
+    print(df_data.columns)
+
+    return df_data
+
+
+if __name__ == "__main__":
+    df_data = create_dataframes()
+
+    print("\n\n---------------------------------------------------------------------------------------------")
+    print("df_data = ", df_data)
+    print("\ndf_data.index", df_data.index)
+    print("\ndf_data.columns", df_data.columns)
+    print("\nNumber of columns = ", len(df_data.columns))
+    print("---------------------------------------------------------------------------------------------")
+
+
+    # ------------------------- OUTPUT -----------------------
+    user_input = input("Do you want to trace the autocorrelation? (1), or plot_columns_scaled(df_data) (2), or nothing (3): ")
+
+    if user_input.lower() == '1':
+        autocorrelation(df_data)
+
+    if user_input.lower() == '2':
+        plot_columns_scaled(df_data)
+
+
+    # plot_columns_scaled(df_data, ['Unemployment Rate', 'Targeted Rate', 'Effective Rate'])
+    # plot_columns_scaled(df_data)
