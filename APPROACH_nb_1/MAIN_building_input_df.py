@@ -277,11 +277,18 @@ def create_dataframes():
     df_yahoo        = get_yahoo_data()
     df_elections    = get_election_data()
 
+    print("Do you want to plot the graphs? (yes/no):")
+    plot_choice = input().lower()
+
+    if plot_choice == 'y' or plot_choice == 'yes':
+        plot_columns_scaled(df_fred, df_yahoo, df_elections)
+
     print("\n\n------------- FRED -------------")
     print(df_fred)
     print("-----------------")
     print("df_fred.index", df_fred.index)
     print("\ndf_fred.columns", df_fred.columns)
+    plot_columns_scaled(df_fred)
     print("================================")
 
     print("------------- YAHOO -------------")
@@ -289,6 +296,7 @@ def create_dataframes():
     print("-----------------")
     print("df_yahoo.index", df_yahoo.index)
     print("\ndf_yahoo.columns", df_yahoo.columns)
+    plot_columns_scaled(df_yahoo)
     print("================================")
 
     print("------------- ELECTIONS -------------")
@@ -296,6 +304,7 @@ def create_dataframes():
     print("-----------------")
     print("df_elections.index", df_elections.index)
     print("\ndf_elections.columns", df_elections.columns)
+    plot_columns_scaled(df_elections)
     print("================================")
 
     # merge those dataframes
@@ -378,4 +387,6 @@ if __name__ == "__main__":
         print("---------------------------------------------------------------------------------------------")
 
     if user_input.lower() == '4':
-        print("-END-")
+        pass
+
+    print("-END-")
