@@ -33,17 +33,18 @@
 #
 #  conda activate py38
 #
-
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import asyncio
 import aiohttp
 import nasdaqdatalink
 import numpy as np
 import time
-import os
 import yfinance as yf
 import pandas as pd
 from talib import RSI, MACD, BBANDS # technical analysis library
-from tool_fct import *
+from tools.tool_fct import *
 
 # *************************************************************************************************
 #                                DIFFERENT SOURCES OF SERIES
@@ -203,13 +204,11 @@ def get_online_yahoo_data(start_date):
     # get data from yahoo
     dow             = yf.download('^DJI', start=start_date)   # daily data
     sp500           = yf.download('^GSPC', start=start_date)  # daily data
-    vix             = yf.download('^VIX', start=start_date)   # daily data
     nasdaq          = yf.download('^IXIC', start=start_date)  # daily data
 
     # resample to monthly
     dow_monthly     = dow.resample('M').mean()
     sp500_monthly   = sp500.resample('M').mean()
-    vix_monthly     = vix.resample('M').mean()
     nasdaq_monthly  = nasdaq.resample('M').mean()
 
     # rename columns
@@ -219,11 +218,9 @@ def get_online_yahoo_data(start_date):
     dow_monthly.rename(columns={'Volume': 'DOW_Volume'}, inplace=True)
     nasdaq_monthly.rename(columns={'Close': 'NASDAQ_Close'}, inplace=True)
     nasdaq_monthly.rename(columns={'Volume': 'NASDAQ_Volume'}, inplace=True)
-    # VIX is not a stock, so no volume
-    vix_monthly.rename(columns={'Close': 'VIX_Close'}, inplace=True)
 
     # build dataframe with all the data
-    df_yahoo = pd.concat([dow_monthly['DOW_Close'], dow_monthly['DOW_Volume'], sp500_monthly['SP500_Close'],  sp500_monthly['SP500_Volume'], nasdaq_monthly['NASDAQ_Close'],  nasdaq_monthly['NASDAQ_Volume'], vix_monthly['VIX_Close']], axis=1)
+    df_yahoo = pd.concat([dow_monthly['DOW_Close'], dow_monthly['DOW_Volume'], sp500_monthly['SP500_Close'],  sp500_monthly['SP500_Volume'], nasdaq_monthly['NASDAQ_Close'],  nasdaq_monthly['NASDAQ_Volume']], axis=1)
     df_yahoo = df_yahoo.tz_localize(None)
 
     # shift index by one day (mean of December is the value of 1st of January)
@@ -265,6 +262,27 @@ def one_hot_encode_elections(df):
     return df_encoded
 
 
+# *************************************************************************************************
+#                                       GENERATOR DATA
+# -------------------------------------------------------------------------------------------------
+
+def get_generator_data():
+    file_path = 'saved_data_from_generators/'
+    all_files = [f for f in os.listdir(file_path) if f.endswith('.csv')]
+
+    df_list = []
+
+    for file in all_files:
+        df = pd.read_csv(os.path.join(file_path, file))
+        df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m-%d')
+        df.index = pd.to_datetime(df["Date"])
+        df = df.drop("Date", axis=1)
+        df_list.append(df)
+
+    merged_df = pd.concat(df_list, axis=1, join='outer')
+    return merged_df
+    
+
 
 # *************************************************************************************************
 # *************************************************************************************************
@@ -276,31 +294,39 @@ def create_dataframes():
     df_fred         = get_fred_data()
     df_yahoo        = get_yahoo_data()
     df_elections    = get_election_data()
+    df_generator    = get_generator_data()
+
+    print("\n\n------------- FRED -------------")
+    print(df_fred)
+    print("-----------------")
+    print("df_fred.index", df_fred.index)
+    print("\ndf_fred.columns", df_fred.columns)
+    print("================================")
+
+    print("------------- YAHOO -------------")
+    print(df_yahoo)
+    print("-----------------")
+    print("df_yahoo.index", df_yahoo.index)
+    print("\ndf_yahoo.columns", df_yahoo.columns)
+    print("================================")
+
+    print("------------- ELECTIONS -------------")
+    print(df_elections)
+    print("-----------------")
+    print("df_elections.index", df_elections.index)
+    print("\ndf_elections.columns", df_elections.columns)
+    print("================================")
+
+    print("------------- GENERATORS -------------")
+    print(df_generator)
+    print("-----------------")
+    print("df_generator.index", df_generator.index)
+    print("\ndf_generator.columns", df_generator.columns)
+    print("================================")
 
     plot_choice = input("Do you want to plot the graphs? (yes/no):").lower()
     if plot_choice == 'y' or plot_choice == 'yes':
-        df_fred, df_yahoo, df_elections)
-
-    # print("\n\n------------- FRED -------------")
-    # print(df_fred)
-    # print("-----------------")
-    # print("df_fred.index", df_fred.index)
-    # print("\ndf_fred.columns", df_fred.columns)
-    # print("================================")
-
-    # print("------------- YAHOO -------------")
-    # print(df_yahoo)
-    # print("-----------------")
-    # print("df_yahoo.index", df_yahoo.index)
-    # print("\ndf_yahoo.columns", df_yahoo.columns)
-    # print("================================")
-
-    # print("------------- ELECTIONS -------------")
-    # print(df_elections)
-    # print("-----------------")
-    # print("df_elections.index", df_elections.index)
-    # print("\ndf_elections.columns", df_elections.columns)
-    # print("================================")
+        plot_dataframes(df_fred, df_yahoo, df_elections, df_generator)
 
     print("\n\nMissing values in df_fred:")
     print(df_fred.isna().sum())

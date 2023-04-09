@@ -1,9 +1,6 @@
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-print("-----------------------------------------------------------")
-print(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-print("-----------------------------------------------------------")
 
 import yfinance as yf
 import pandas as pd
@@ -52,17 +49,19 @@ vix_start_index = merged_df.loc[~merged_df['VIX'].isna()].index[0]
 # Create a new column 'Composite_VIX' with the scaled SP500_Volatility before VIX is available, and VIX after that
 merged_df['Composite_VIX'] = merged_df.apply(lambda row: row['SP500_Volatility'] if pd.isna(row['VIX']) or row.name < vix_start_index else row['VIX'], axis=1)
 
+# Set the index and change it to the first day of the month & rename it to 'Date'
+merged_df.set_index(pd.to_datetime(merged_df['Month']).dt.to_period('M').dt.to_timestamp(), inplace=True)
+merged_df.index.name = 'Date'
+merged_df.drop(columns=['SP500_Volatility', 'VIX', 'Month'], inplace=True)
+
+# Save to csv
+merged_df.to_csv('saved_data_from_generators/composite_vix.csv')
+
+
 ### Plot the Composite_VIX column ###
 # plt.figure(figsize=(10, 6))
-# plt.plot(merged_df['Month'], merged_df['Composite_VIX'])
+# plt.plot(merged_df['Composite_VIX'])
 # plt.xlabel('Month')
 # plt.ylabel('Composite VIX')
 # plt.title('Composite VIX (Scaled SP500 Volatility and VIX)')
 # plt.show()
-
-
-# Create and save a new DataFrame with just the 'Month' and 'Composite_VIX' columns
-composite_vix_df = merged_df[['Month', 'Composite_VIX']]
-composite_vix_df.to_csv('saved_data_from_generators/composite_vix.csv', index=False)
-
-
