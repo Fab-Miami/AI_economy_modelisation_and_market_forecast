@@ -1,4 +1,4 @@
-
+import inspect
 import pandas as pd
 import seaborn as sns
 import numpy as np
@@ -15,7 +15,6 @@ def plot_columns(df, col_names):
     plt.show(block=False)
 
 def plot_columns_scaled(df, column_list=[]):
-
     if len(column_list) == 0:
         column_list =[]
         for column in df.columns:
@@ -35,6 +34,37 @@ def plot_columns_scaled(df, column_list=[]):
     # set the size of the plt
     plt.legend()
     plt.show()
+
+def plot_dataframes(*dataframes):
+    n = len(dataframes)
+    columns = 2
+    rows = (n + columns - 1) // columns  # Round up the division
+
+    # Retrieve variable names
+    frame = inspect.currentframe().f_back
+    var_names = []
+    for var_name, var_val in frame.f_locals.items():
+        if id(var_val) in [id(df) for df in dataframes]:
+            var_names.append(var_name)
+
+    plt.figure(figsize=(10 * columns, 8 * rows))
+
+    for i, df in enumerate(dataframes):
+        plt.subplot(rows, columns, i + 1)
+        plt.title(f'{var_names[i]}')
+
+        for col_name in df.columns:
+            data = df[col_name]
+            # Scale the data between 0 and 1
+            data_scaled = (data - data.min()) / (data.max() - data.min())
+            plt.plot(data_scaled, label=col_name)
+        plt.xlabel('Index')
+        plt.ylabel('Scaled Values')
+        plt.legend()
+
+    plt.tight_layout()  # Adjust subplot spacing
+    plt.show()
+
 
 def autocorrelation(df_results):
     """ Compute the autocorrelation matrix of the DataFrame """

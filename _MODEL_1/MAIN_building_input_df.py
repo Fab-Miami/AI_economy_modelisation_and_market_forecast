@@ -43,7 +43,7 @@ import os
 import yfinance as yf
 import pandas as pd
 from talib import RSI, MACD, BBANDS # technical analysis library
-from tool_fct import autocorrelation , plot_columns, plot_columns_scaled
+from tool_fct import *
 
 # *************************************************************************************************
 #                                DIFFERENT SOURCES OF SERIES
@@ -277,51 +277,55 @@ def create_dataframes():
     df_yahoo        = get_yahoo_data()
     df_elections    = get_election_data()
 
-    print("Do you want to plot the graphs? (yes/no):")
-    plot_choice = input().lower()
-
+    plot_choice = input("Do you want to plot the graphs? (yes/no):").lower()
     if plot_choice == 'y' or plot_choice == 'yes':
-        plot_columns_scaled(df_fred, df_yahoo, df_elections)
+        df_fred, df_yahoo, df_elections)
 
-    print("\n\n------------- FRED -------------")
-    print(df_fred)
-    print("-----------------")
-    print("df_fred.index", df_fred.index)
-    print("\ndf_fred.columns", df_fred.columns)
-    plot_columns_scaled(df_fred)
-    print("================================")
+    # print("\n\n------------- FRED -------------")
+    # print(df_fred)
+    # print("-----------------")
+    # print("df_fred.index", df_fred.index)
+    # print("\ndf_fred.columns", df_fred.columns)
+    # print("================================")
 
-    print("------------- YAHOO -------------")
-    print(df_yahoo)
-    print("-----------------")
-    print("df_yahoo.index", df_yahoo.index)
-    print("\ndf_yahoo.columns", df_yahoo.columns)
-    plot_columns_scaled(df_yahoo)
-    print("================================")
+    # print("------------- YAHOO -------------")
+    # print(df_yahoo)
+    # print("-----------------")
+    # print("df_yahoo.index", df_yahoo.index)
+    # print("\ndf_yahoo.columns", df_yahoo.columns)
+    # print("================================")
 
-    print("------------- ELECTIONS -------------")
-    print(df_elections)
-    print("-----------------")
-    print("df_elections.index", df_elections.index)
-    print("\ndf_elections.columns", df_elections.columns)
-    plot_columns_scaled(df_elections)
-    print("================================")
+    # print("------------- ELECTIONS -------------")
+    # print(df_elections)
+    # print("-----------------")
+    # print("df_elections.index", df_elections.index)
+    # print("\ndf_elections.columns", df_elections.columns)
+    # print("================================")
+
+    print("\n\nMissing values in df_fred:")
+    print(df_fred.isna().sum())
+
+    print("\n\nMissing values in df_yahoo:")
+    print(df_yahoo.isna().sum())
 
     # merge those dataframes
-    df_data = pd.concat([df_fred, df_yahoo], axis=1, join='outer')
-
+    df_fred__df_yahoo__merged = pd.concat([df_fred, df_yahoo], axis=1, join='outer')
 
     # now take log and diff of all those data
-    df_data = df_data.apply(np.log)
+    df_fred__df_yahoo__merged__log = df_fred__df_yahoo__merged.apply(np.log)
 
     # Calculate the difference between consecutive rows for each column in-place
-    df_data = df_data.diff().dropna()
+    df_fred__df_yahoo__merged__log__diff = df_fred__df_yahoo__merged__log.diff().dropna()
 
 
     # add elections data
-    df_data = pd.concat([df_data, df_elections], axis=1, join='outer')
+    df_data = pd.concat([df_fred__df_yahoo__merged__log__diff, df_elections], axis=1, join='outer')
 
     
+
+    plot_choice = input("Do you want to plot the graphs of df_fred & df_yahoo merged? (yes/no):").lower()
+    if plot_choice == 'y' or plot_choice == 'yes':
+        plot_dataframes(df_fred__df_yahoo__merged, df_fred__df_yahoo__merged__log, df_fred__df_yahoo__merged__log__diff)
 
 
     print("\n\n---------------------------------------------------------------------------------------------")
