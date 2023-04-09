@@ -358,23 +358,24 @@ def create_dataframes():
 if __name__ == "__main__":
     df_data = create_dataframes()
 
-    print("\n\n---------------------------------------------------------------------------------------------")
-    print("df_data = ", df_data)
-    print("\ndf_data.index", df_data.index)
-    print("\ndf_data.columns", df_data.columns)
-    print("\nNumber of columns = ", len(df_data.columns))
-    print("---------------------------------------------------------------------------------------------")
-
 
     # ------------------------- OUTPUT -----------------------
-    user_input = input("Do you want to trace the autocorrelation? (1), or plot_columns_scaled(df_data) (2), or nothing (3): ")
+    print("\n\n--------------------------------------------------------------------------------------------------------------------------")
+    user_input = input("Do you want to trace the autocorrelation? (1), or plot_columns_scaled(df_data) (2), or print stats (3), or nothing (4): ")
 
     if user_input.lower() == '1':
         autocorrelation(df_data)
 
     if user_input.lower() == '2':
+        # plot_columns_scaled(df_data, ['Unemployment Rate', 'Targeted Rate', 'Effective Rate'])
         plot_columns_scaled(df_data)
 
+    if user_input.lower() == '3':
+        print("df_data = ", df_data)
+        print("\ndf_data.index", df_data.index)
+        print("\ndf_data.columns", df_data.columns)
+        print("\nNumber of columns = ", len(df_data.columns))
+        print("---------------------------------------------------------------------------------------------")
 
-    # plot_columns_scaled(df_data, ['Unemployment Rate', 'Targeted Rate', 'Effective Rate'])
-    # plot_columns_scaled(df_data)
+    if user_input.lower() == '4':
+        print("-END-")

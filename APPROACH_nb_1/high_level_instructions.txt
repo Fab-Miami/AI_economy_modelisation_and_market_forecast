@@ -1,0 +1,117 @@
+Here's a high-level outline of the steps you'll need to take to create your LSTM model:
+
+1. Data collection: Gather historical macroeconomic data and SPY (S&P 500 ETF) price data for the past 50 or 60 years. Macroeconomic data may include GDP, unemployment rate, inflation rate, interest rates, and other relevant indicators. Make sure to preprocess the data to account for missing values and to normalize the data for better model performance.
+
+    1. Gross Domestic Product (GDP)
+    2. GDP growth rate
+    3. Unemployment rate
+    4. Inflation rate (CPI)
+    5. Core inflation rate
+    6. Producer Price Index (PPI)
+    7. Personal Consumption Expenditures (PCE)
+    8. PCE inflation rate
+    9. Federal funds rate
+    10. 10-year Treasury yield
+    11. 2-year Treasury yield
+    12. Yield curve spread (10-year minus 2-year)
+    13. 30-year fixed mortgage rate
+    14. Prime lending rate
+    15. Corporate bond yields
+    16. High-yield bond spreads
+    17. M2 money supply
+    18. M1 money supply
+    19. MZM money supply
+    20. Money supply growth rate
+    21. Total public debt
+    22. Public debt as a percentage of GDP
+    23. Federal budget deficit/surplus
+    24. Balance of trade
+    25. Current account balance
+    26. Foreign exchange reserves
+    27. Gross private domestic investment
+    28. Non-residential fixed investment
+    29. Residential fixed investment
+    30. Change in private inventories
+    31. Consumer confidence index
+    32. Small business optimism index
+    33. CEO confidence index
+    34. Manufacturing Purchasing Managers' Index (PMI)
+    35. Services PMI
+    36. ISM Manufacturing Index
+    37. ISM Non-Manufacturing Index
+    38. Durable goods orders
+    39. New orders for capital goods
+    40. New home sales
+    41. Existing home sales
+    42. Housing starts
+    43. Building permits
+    44. Home price index
+    45. Case-Shiller Home Price Index
+    46. FHFA House Price Index
+    47. Construction spending
+    48. Retail sales
+    49. Consumer credit
+    50. Total business sales
+    51. Total business inventories
+    52. Inventory-to-sales ratio
+    53. Industrial production
+    54. Capacity utilization
+    55. Factory orders
+    56. Factory shipments
+    57. Factory inventories
+    58. Average weekly hours worked (manufacturing)
+    59. Average weekly hours worked (nonfarm)
+    60. Average hourly earnings
+    61. Real average hourly earnings
+    62. Real average weekly earnings
+    63. Personal income
+    64. Real personal income
+    65. Personal saving rate
+    66. Real disposable personal income
+    67. Labor force participation rate
+    68. Employment-population ratio
+    69. Job openings
+    70. Hires
+    71. Quits
+    72. Layoffs and discharges
+    73. Initial jobless claims
+    74. Continuing jobless claims
+    75. Help wanted index
+    76. Nonfarm payroll employment
+    77. Manufacturing employment
+    78. Services employment
+    79. Government employment
+    80. Private employment
+    81. Part-time employment
+    82. Full-time employment
+    83. Temporary help employment
+    84. Average workweek
+    85. Productivity
+    86. Unit labor costs
+    87. Gross national income
+    88. Gross national savings
+    89. Gross private savings
+    90. Gross government savings
+    91. Net exports of goods and services
+    92. Exports of goods and services
+    93. Imports of goods and services
+    94. Real exports of goods and services
+    95. Real imports of goods and services
+    96. Net foreign direct investment
+    97. Net portfolio investment
+    98. Net other investment
+    99. Net international investment position
+    100. Real effective exchange rate
+
+2. Feature engineering: Convert the macroeconomic data into features that the LSTM model can understand. This may involve scaling the data, creating new features based on the raw data, or using techniques like principal component analysis (PCA) to reduce the dimensionality of the data.
+
+3. Data splitting: Divide the preprocessed data into training, validation, and testing sets. This will allow you to train the model on one set of data, fine-tune its performance on the validation set, and then test its performance on unseen data.
+
+4. Model creation: Design an LSTM model with an appropriate architecture for the problem. This may involve deciding on the number of LSTM layers, the number of neurons in each layer, and other hyperparameters, such as the learning rate and batch size.
+
+5. Model training: Train the LSTM model on the training data using an appropriate loss function and optimization algorithm, such as mean squared error (MSE) and Adam optimizer.
+
+6. Model evaluation: Evaluate the model's performance on the validation and testing sets, and make adjustments to the model architecture and hyperparameters as needed to improve performance.
+
+7. Model deployment: Once you are satisfied with the model's performance, you can deploy it to make predictions on future SPY prices based on new macroeconomic data.
+
