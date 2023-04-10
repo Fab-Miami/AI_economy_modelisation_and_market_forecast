@@ -41,6 +41,7 @@ import aiohttp
 import nasdaqdatalink
 import numpy as np
 import time
+import datetime as datetime
 import yfinance as yf
 import pandas as pd
 from talib import RSI, MACD, BBANDS # technical analysis library
@@ -60,7 +61,6 @@ fred_series = [
     {'series_name': 'Corporate_Profits', 'series_id': 'CP', 'frequency': 'q'},
     # {'series_name': 'NASDAQ', 'series_id': 'NASDAQCOM', 'frequency': 'm'}, # better to get it from Yahoo Finance
     # [NO DATA BEFORE 1986, and almost like NASDAQ anyway] {'series_name': 'NASDAQ100', 'series_id': 'NASDAQ100', 'frequency': 'm'},
-    # [NO DATA BEFORE FEV 2013] {'series_name': 'Dow Jones', 'series_id': 'DJIA', 'frequency': 'm'},
     {'series_name': 'Consumer_Confidence_Index', 'series_id': 'CSCICP03USM665S', 'frequency': 'm'}, # Consumer Confidence Index
     {'series_name': 'US_Market_Cap', 'series_id': 'SPASTT01USM661N', 'frequency': 'm'}, # Total Share Prices for All Shares for the United States
     {'series_name': 'Population', 'series_id': 'POP', 'frequency': 'm'}, # US population
@@ -202,25 +202,17 @@ def get_yahoo_data():
 
 def get_online_yahoo_data(start_date):
     # get data from yahoo
-    dow             = yf.download('^DJI', start=start_date)   # daily data
     sp500           = yf.download('^GSPC', start=start_date)  # daily data
-    nasdaq          = yf.download('^IXIC', start=start_date)  # daily data
 
     # resample to monthly
-    dow_monthly     = dow.resample('M').mean()
     sp500_monthly   = sp500.resample('M').mean()
-    nasdaq_monthly  = nasdaq.resample('M').mean()
 
     # rename columns
     sp500_monthly.rename(columns={'Close': 'SP500_Close'}, inplace=True)
     sp500_monthly.rename(columns={'Volume': 'SP500_Volume'}, inplace=True)
-    dow_monthly.rename(columns={'Close': 'DOW_Close'}, inplace=True)
-    dow_monthly.rename(columns={'Volume': 'DOW_Volume'}, inplace=True)
-    nasdaq_monthly.rename(columns={'Close': 'NASDAQ_Close'}, inplace=True)
-    nasdaq_monthly.rename(columns={'Volume': 'NASDAQ_Volume'}, inplace=True)
 
     # build dataframe with all the data
-    df_yahoo = pd.concat([dow_monthly['DOW_Close'], dow_monthly['DOW_Volume'], sp500_monthly['SP500_Close'],  sp500_monthly['SP500_Volume'], nasdaq_monthly['NASDAQ_Close'],  nasdaq_monthly['NASDAQ_Volume']], axis=1)
+    df_yahoo = pd.concat([sp500_monthly['SP500_Close'],  sp500_monthly['SP500_Volume']], axis=1)
     df_yahoo = df_yahoo.tz_localize(None)
 
     # shift index by one day (mean of December is the value of 1st of January)
@@ -233,9 +225,9 @@ def get_online_yahoo_data(start_date):
 # *************************************************************************************************
 #                                       ELECTION DATA
 # -------------------------------------------------------------------------------------------------
-def get_election_data():
+def get_elections_data():
     # US elections results (DEM = 1 ; REP = 2)
-    df_elections = pd.read_csv('saved_data_from_static/USelections.csv')
+    df_elections = pd.read_csv('saved_data_elections/USelections.csv')
     df_elections['Date'] = pd.to_datetime(df_elections['Date'], format='%Y-%m-%d')
     df_elections.index = pd.to_datetime(df_elections["Date"])
     df_elections = df_elections.drop("Date", axis=1)
@@ -282,6 +274,36 @@ def get_generator_data():
     merged_df = pd.concat(df_list, axis=1, join='outer')
     return merged_df
     
+# *************************************************************************************************
+#                                       GET DATA FROM STATIC FILES
+# -------------------------------------------------------------------------------------------------
+
+def parse_date(date_str):
+    try:
+        dt = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ')
+        dt = dt.replace(tzinfo=None)
+        dt = dt.date().strftime('%Y-%m-%d')
+    except ValueError:
+        dt = datetime.datetime.strptime(date_str, '%Y-%m-%d')
+        dt = dt.date().strftime('%Y-%m-%d')
+    return dt
+
+def get_static_data():
+    file_path = 'saved_data_from_static/'
+    all_files = [f for f in os.listdir(file_path) if f.endswith('.csv') and not f.startswith('RAW_')]
+
+    df_list = []
+
+    for file in all_files:
+        df = pd.read_csv(os.path.join(file_path, file))
+        df['Date'] = df['Date'].apply(parse_date)
+        df.index = df['Date']
+        df = df.drop("Date", axis=1)
+        df_list.append(df)
+
+    merged_df = pd.concat(df_list, axis=1, join='outer')
+    return merged_df
+
 
 
 # *************************************************************************************************
@@ -291,51 +313,77 @@ def get_generator_data():
 # -------------------------------------------------------------------------------------------------
 
 def create_dataframes():
-    df_fred         = get_fred_data()
-    df_yahoo        = get_yahoo_data()
-    df_elections    = get_election_data()
-    df_generator    = get_generator_data()
 
-    print("\n\n------------- FRED -------------")
-    print(df_fred)
-    print("-----------------")
-    print("df_fred.index", df_fred.index)
-    print("\ndf_fred.columns", df_fred.columns)
-    print("================================")
+    df_list = ["fred", "elections", "generator", "static"]
+    dfs = {}
 
-    print("------------- YAHOO -------------")
-    print(df_yahoo)
-    print("-----------------")
-    print("df_yahoo.index", df_yahoo.index)
-    print("\ndf_yahoo.columns", df_yahoo.columns)
-    print("================================")
+    for name in df_list:
+        func_name    = f"get_{name}_data"
+        df_name      = f"df_{name}"
+        dfs[df_name] = getattr(sys.modules[__name__], func_name)() # Call the function with the name from df_list ( eg: get_fred_data() )
 
-    print("------------- ELECTIONS -------------")
-    print(df_elections)
-    print("-----------------")
-    print("df_elections.index", df_elections.index)
-    print("\ndf_elections.columns", df_elections.columns)
-    print("================================")
+    # df_fred         = get_fred_data()
+    # # df_yahoo        = get_yahoo_data()
+    # df_elections    = get_elections_data()
+    # df_generator    = get_generator_data()
+    # df_static       = get_static_data()
 
-    print("------------- GENERATORS -------------")
-    print(df_generator)
-    print("-----------------")
-    print("df_generator.index", df_generator.index)
-    print("\ndf_generator.columns", df_generator.columns)
-    print("================================")
+    for df_name, df in dfs.items():
+        print(f"------------- {df_name.upper()} -------------")
+        print(df)
+        # if df_name in df_list:
+        #     print(f"------------- {df_name.upper()} -------------")
+        #     print(df)
+        #     print("-----------------")
+        #     print(f"{df_name}.index", df.index)
+        #     print(f"\n{df_name}.columns", df.columns)
+        #     print("================================")
+
+    # print("\n\n------------- FRED -------------")
+    # print(df_fred)
+    # print("-----------------")
+    # print("df_fred.index", df_fred.index)
+    # print("\ndf_fred.columns", df_fred.columns)
+    # print("================================")
+
+    # print("------------- ELECTIONS -------------")
+    # print(df_elections)
+    # print("-----------------")
+    # print("df_elections.index", df_elections.index)
+    # print("\ndf_elections.columns", df_elections.columns)
+    # print("================================")
+
+    # print("------------- GENERATORS -------------")
+    # print(df_generator)
+    # print("-----------------")
+    # print("df_generator.index", df_generator.index)
+    # print("\ndf_generator.columns", df_generator.columns)
+    # print("================================")
+
+    # print("------------- STATIC -------------")
+    # print(df_static)
+    # print("-----------------")
+    # print("df_static.index", df_static.index)
+    # print("\ndf_static.columns", df_static.columns)
+    # print("================================")
+
 
     plot_choice = input("Do you want to plot the graphs? (yes/no):").lower()
     if plot_choice == 'y' or plot_choice == 'yes':
-        plot_dataframes(df_fred, df_yahoo, df_elections, df_generator)
+        plot_dataframes(*df_list)
 
     print("\n\nMissing values in df_fred:")
     print(df_fred.isna().sum())
 
-    print("\n\nMissing values in df_yahoo:")
-    print(df_yahoo.isna().sum())
+    print("\n\nMissing values in df_generator:")
+    print(df_generator.isna().sum())
+
+    print("\n\nMissing values in df_static:")
+    print(df_static.isna().sum())
+
 
     # merge those dataframes
-    df_fred__df_yahoo__merged = pd.concat([df_fred, df_yahoo], axis=1, join='outer')
+    df_fred__df_yahoo__merged = pd.concat([df_fred], axis=1, join='outer')
 
     # now take log and diff of all those data
     df_fred__df_yahoo__merged__log = df_fred__df_yahoo__merged.apply(np.log)
@@ -344,14 +392,14 @@ def create_dataframes():
     df_fred__df_yahoo__merged__log__diff = df_fred__df_yahoo__merged__log.diff().dropna()
 
 
-    # add elections data
-    df_data = pd.concat([df_fred__df_yahoo__merged__log__diff, df_elections], axis=1, join='outer')
+    # add elections data AND static data
+    df_data = pd.concat([df_fred__df_yahoo__merged__log__diff, df_elections, df_static], axis=1, join='outer')
 
     
 
-    plot_choice = input("Do you want to plot the graphs of df_fred & df_yahoo merged? (yes/no):").lower()
+    plot_choice = input("Do you want to plot the graphs of df_fred & df_yahoo & final dataframe merged? (yes/no):").lower()
     if plot_choice == 'y' or plot_choice == 'yes':
-        plot_dataframes(df_fred__df_yahoo__merged, df_fred__df_yahoo__merged__log, df_fred__df_yahoo__merged__log__diff)
+        plot_dataframes(df_fred__df_yahoo__merged, df_fred__df_yahoo__merged__log, df_fred__df_yahoo__merged__log__diff, df_data)
 
 
     print("\n\n---------------------------------------------------------------------------------------------")
