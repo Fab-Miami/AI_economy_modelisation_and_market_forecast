@@ -320,6 +320,7 @@ def create_dataframes():
     for name in df_list:
         func_name    = f"get_{name}_data"
         df_name      = f"df_{name}"
+        # Create a dictionary with the name of the dataframe as key and the dataframe as value
         dfs[df_name] = getattr(sys.modules[__name__], func_name)() # Call the function with the name from df_list ( eg: get_fred_data() )
 
     # df_fred         = get_fred_data()
@@ -370,16 +371,17 @@ def create_dataframes():
 
     plot_choice = input("Do you want to plot the graphs? (yes/no):").lower()
     if plot_choice == 'y' or plot_choice == 'yes':
-        plot_dataframes(*df_list)
+        print("\n\n== Printing those dataframes ==> df_list:", df_list, "\n\n")
+        plot_dataframes(dfs)
 
-    print("\n\nMissing values in df_fred:")
-    print(df_fred.isna().sum())
+    # printing missing values
+    for name, df in dfs.items():
+            print(f"\n\nMissing values in {name}:")
+            print(df.isna().sum())
 
-    print("\n\nMissing values in df_generator:")
-    print(df_generator.isna().sum())
 
-    print("\n\nMissing values in df_static:")
-    print(df_static.isna().sum())
+
+    # ----====#### WORKS UP TO HERE ####====----
 
 
     # merge those dataframes

@@ -35,8 +35,15 @@ def plot_columns_scaled(df, column_list=[]):
     plt.legend()
     plt.show()
 
-def plot_dataframes(*dataframes):
+def plot_dataframes(dataframes):
     n = len(dataframes)
+
+    print("----------------------------------------------================================--------------------------------")
+    print("n: ", n)
+    print(type(dataframes))
+    for df in dataframes.items():
+        print(df)
+
     columns = 2
     rows = (n + columns - 1) // columns  # Round up the division
 
@@ -49,9 +56,12 @@ def plot_dataframes(*dataframes):
 
     plt.figure(figsize=(10 * columns, 8 * rows))
 
-    for i, df in enumerate(dataframes):
-        plt.subplot(rows, columns, i + 1)
-        plt.title(f'{var_names[i]}')
+    # for i, df in enumerate(dataframes):
+    for df_name, df in dataframes.items():
+        # plt.subplot(rows, columns, i + 1)
+        # plt.title(f'{var_names[i]}')
+
+        print(df)
 
         for col_name in df.columns:
             data = df[col_name]
