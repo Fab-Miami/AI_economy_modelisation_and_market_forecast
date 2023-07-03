@@ -4,6 +4,8 @@ import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
 from talib import RSI, MACD, BBANDS
+from colorama import Fore, Back, Style, init
+init(autoreset=True)
 
 def plot_columns(df, col_names):
     for col_name in col_names:
@@ -38,7 +40,7 @@ def plot_columns_scaled(df, column_list=[]):
 def plot_dataframes(dataframes):
     n = len(dataframes)
 
-    print("----------------------------------------------================================--------------------------------")
+    print(Fore.RED + "----------------------------------------------================================--------------------------------")
     print("n: ", n)
     print(type(dataframes))
     for df in dataframes.items():
@@ -65,15 +67,19 @@ def plot_dataframes(dataframes):
 
         for col_name in df.columns:
             data = df[col_name]
-            # Scale the data between 0 and 1
-            data_scaled = (data - data.min()) / (data.max() - data.min())
-            plt.plot(data_scaled, label=col_name)
+            # Scale the data between 0 and 1, but only if data is numeric
+            if np.issubdtype(df[col_name].dtype, np.number):
+                data_scaled = (data - data.min()) / (data.max() - data.min())
+                plt.plot(data_scaled, label=col_name)
+            else:
+                print(f"{Fore.RED}Skipping column {col_name} because it is not numeric")
         plt.xlabel('Index')
         plt.ylabel('Scaled Values')
         plt.legend()
 
     plt.tight_layout()  # Adjust subplot spacing
     plt.show()
+
 
 
 def autocorrelation(df_results):

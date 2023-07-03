@@ -38,7 +38,6 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import asyncio
 import aiohttp
-import nasdaqdatalink
 import numpy as np
 import time
 import datetime as datetime
@@ -46,6 +45,8 @@ import yfinance as yf
 import pandas as pd
 from talib import RSI, MACD, BBANDS # technical analysis library
 from tools.tool_fct import *
+from colorama import Fore, Back, Style, init
+init(autoreset=True)
 
 # *************************************************************************************************
 #                                DIFFERENT SOURCES OF SERIES
@@ -116,11 +117,11 @@ class NasdaqCom:
 # -------------------------------------------------------------------------------------------------
 
 def get_fred_data():
-    file_path = 'saved_data_from_api/fred_results.csv'
+    file_path = f"../saved_data_from_api/fred_results.csv"
     if os.path.isfile(file_path):
         df_fred = pd.read_csv(file_path, index_col=0)
         df_fred.index = pd.to_datetime(df_fred.index)
-        print("============> USING FRED SAVED DATA")
+        print(Fore.BLUE + "\n============> USING FRED SAVED DATA")
     else:
         fred = FredOnline(fred_series, start_date, end_date)
         df_fred = loop.run_until_complete(fred.get_api_results())
@@ -227,7 +228,7 @@ def get_online_yahoo_data(start_date):
 # -------------------------------------------------------------------------------------------------
 def get_elections_data():
     # US elections results (DEM = 1 ; REP = 2)
-    df_elections = pd.read_csv('saved_data_elections/USelections.csv')
+    df_elections = pd.read_csv('../saved_data_elections/USelections.csv')
     df_elections['Date'] = pd.to_datetime(df_elections['Date'], format='%Y-%m-%d')
     df_elections.index = pd.to_datetime(df_elections["Date"])
     df_elections = df_elections.drop("Date", axis=1)
@@ -259,7 +260,7 @@ def one_hot_encode_elections(df):
 # -------------------------------------------------------------------------------------------------
 
 def get_generator_data():
-    file_path = 'saved_data_from_generators/'
+    file_path = '../saved_data_from_generators/'
     all_files = [f for f in os.listdir(file_path) if f.endswith('.csv')]
 
     df_list = []
@@ -289,7 +290,7 @@ def parse_date(date_str):
     return dt
 
 def get_static_data():
-    file_path = 'saved_data_from_static/'
+    file_path = '../saved_data_from_static/'
     all_files = [f for f in os.listdir(file_path) if f.endswith('.csv') and not f.startswith('RAW_')]
 
     df_list = []
@@ -330,7 +331,7 @@ def create_dataframes():
     # df_static       = get_static_data()
 
     for df_name, df in dfs.items():
-        print(f"------------- {df_name.upper()} -------------")
+        print(f"{Fore.GREEN}------------- {df_name.upper()} -------------")
         print(df)
         # if df_name in df_list:
         #     print(f"------------- {df_name.upper()} -------------")
