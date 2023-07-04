@@ -1,4 +1,4 @@
-time,open,high,low,close,Volume,Volume MA
+Date,open,high,low,close,Volume,Volume MA
 1973-06-01T13:30:00Z,102.3,104.79,99.43,100.98,NaN,NaN
 1973-07-02T13:30:00Z,100.15,109.36,99.39,108.64,NaN,NaN
 1973-08-01T13:30:00Z,108.64,108.64,101.34,104.87,NaN,NaN

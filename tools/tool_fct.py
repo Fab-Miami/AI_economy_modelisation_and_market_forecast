@@ -4,8 +4,11 @@ import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
 from talib import RSI, MACD, BBANDS
-from colorama import Fore, Back, Style, init
-init(autoreset=True)
+#
+from rich import print
+from rich.console import Console
+console = Console()
+#
 
 def plot_columns(df, col_names):
     for col_name in col_names:
@@ -38,9 +41,30 @@ def plot_columns_scaled(df, column_list=[]):
     plt.show()
 
 def plot_dataframes(dataframes):
+    for df_name, df in dataframes.items():
+        console.print(f"[bold green]\n------------- {df_name.upper()} -------------[/bold green]")
+
+        plt.figure(figsize=(10, 8))
+
+        for col_name in df.columns:
+            data = df[col_name]
+            # Scale the data between 0 and 1, but only if data is numeric
+            if np.issubdtype(df[col_name].dtype, np.number):
+                data_scaled = (data - data.min()) / (data.max() - data.min())
+                plt.plot(data_scaled, label=col_name)
+            else:
+                console.print(f"Skipping column {col_name} because it is not numeric", style="bold red")
+
+        plt.xlabel('Index')
+        plt.ylabel('Scaled Values')
+        plt.legend()
+
+        plt.show()
+
+def plot_dataframes_OLD(dataframes):
     n = len(dataframes)
 
-    print(Fore.RED + "----------------------------------------------================================--------------------------------")
+    print("----------------------------------------------================================--------------------------------")
     print("n: ", n)
     print(type(dataframes))
     for df in dataframes.items():
@@ -72,7 +96,7 @@ def plot_dataframes(dataframes):
                 data_scaled = (data - data.min()) / (data.max() - data.min())
                 plt.plot(data_scaled, label=col_name)
             else:
-                print(f"{Fore.RED}Skipping column {col_name} because it is not numeric")
+                print(f"Skipping column {col_name} because it is not numeric")
         plt.xlabel('Index')
         plt.ylabel('Scaled Values')
         plt.legend()

@@ -45,8 +45,11 @@ import yfinance as yf
 import pandas as pd
 from talib import RSI, MACD, BBANDS # technical analysis library
 from tools.tool_fct import *
-from colorama import Fore, Back, Style, init
-init(autoreset=True)
+#
+from rich import print
+from rich.console import Console
+console = Console()
+#
 
 # *************************************************************************************************
 #                                DIFFERENT SOURCES OF SERIES
@@ -121,7 +124,7 @@ def get_fred_data():
     if os.path.isfile(file_path):
         df_fred = pd.read_csv(file_path, index_col=0)
         df_fred.index = pd.to_datetime(df_fred.index)
-        print(Fore.BLUE + "\n============> USING FRED SAVED DATA")
+        print("[bold yellow]\n============> USING FRED SAVED DATA <============\n[/bold yellow]")
     else:
         fred = FredOnline(fred_series, start_date, end_date)
         df_fred = loop.run_until_complete(fred.get_api_results())
@@ -290,17 +293,54 @@ def parse_date(date_str):
     return dt
 
 def get_static_data():
+    import os
+    import pandas as pd
+    from dateutil.parser import parse as parse_date
+
     file_path = '../saved_data_from_static/'
     all_files = [f for f in os.listdir(file_path) if f.endswith('.csv') and not f.startswith('RAW_')]
 
     df_list = []
 
+    # MAKE SURE first column is named "date"
     for file in all_files:
         df = pd.read_csv(os.path.join(file_path, file))
         df['Date'] = df['Date'].apply(parse_date)
         df.index = df['Date']
         df = df.drop("Date", axis=1)
         df_list.append(df)
+
+    # merge all dataframes in df_list
+    merged_df = pd.concat(df_list, axis=1, join='inner')
+
+    print("++++++++++++++++++++++++++++++++++++++++++++")
+    print(merged_df)
+    print("++++++++++++++++++++++++++++++++++++++++++++")
+
+    return merged_df
+
+
+
+def get_static_data_OLD():
+    file_path = '../saved_data_from_static/'
+    all_files = [f for f in os.listdir(file_path) if f.endswith('.csv') and not f.startswith('RAW_')]
+
+    df_list = []
+
+    # MAKE SURE first column is named "date"
+    for file in all_files:
+        df = pd.read_csv(os.path.join(file_path, file))
+        df['Date'] = df['Date'].apply(parse_date)
+        df.index = df['Date']
+        df = df.drop("Date", axis=1)
+        print(f"{file}++++++++++++++++++++++++++++++++++++++++++++")
+        print(df)
+        print("++++++++++++++++++++++++++++++++++++++++++++")
+        df_list.append(df)
+
+    print("++++++++++++++++++++++++++++++++++++++++++++")
+    print(df_list)
+    print("++++++++++++++++++++++++++++++++++++++++++++")
 
     merged_df = pd.concat(df_list, axis=1, join='outer')
     return merged_df
@@ -310,8 +350,8 @@ def get_static_data():
 # *************************************************************************************************
 # *************************************************************************************************
 #                                     - STARTS HERE -
-# -------------------------------------------------------------------------------------------------
-# -------------------------------------------------------------------------------------------------
+# *************************************************************************************************
+# *************************************************************************************************
 
 def create_dataframes():
 
@@ -325,13 +365,13 @@ def create_dataframes():
         dfs[df_name] = getattr(sys.modules[__name__], func_name)() # Call the function with the name from df_list ( eg: get_fred_data() )
 
     # df_fred         = get_fred_data()
-    # # df_yahoo        = get_yahoo_data()
+    # df_yahoo        = get_yahoo_data()
     # df_elections    = get_elections_data()
     # df_generator    = get_generator_data()
     # df_static       = get_static_data()
 
     for df_name, df in dfs.items():
-        print(f"{Fore.GREEN}------------- {df_name.upper()} -------------")
+        print(f"[bold green]\n------------- {df_name.upper()} -------------[/bold green]")
         print(df)
         # if df_name in df_list:
         #     print(f"------------- {df_name.upper()} -------------")
@@ -370,23 +410,22 @@ def create_dataframes():
     # print("================================")
 
 
-    plot_choice = input("Do you want to plot the graphs? (yes/no):").lower()
+    console.print("Do you want to plot the graphs? (yes/no):", style="bold yellow")
+    plot_choice = input().lower()
+
     if plot_choice == 'y' or plot_choice == 'yes':
         print("\n\n== Printing those dataframes ==> df_list:", df_list, "\n\n")
         plot_dataframes(dfs)
 
     # printing missing values
     for name, df in dfs.items():
-            print(f"\n\nMissing values in {name}:")
+            print(f"\n[bold red]Missing values in {name}:[/bold red]")
             print(df.isna().sum())
 
 
 
-    # ----====#### WORKS UP TO HERE ####====----
-
-
     # merge those dataframes
-    df_fred__df_yahoo__merged = pd.concat([df_fred], axis=1, join='outer')
+    df_fred__df_yahoo__merged = pd.concat([dfs['df_fred']], axis=1, join='outer')
 
     # now take log and diff of all those data
     df_fred__df_yahoo__merged__log = df_fred__df_yahoo__merged.apply(np.log)
@@ -396,13 +435,19 @@ def create_dataframes():
 
 
     # add elections data AND static data
-    df_data = pd.concat([df_fred__df_yahoo__merged__log__diff, df_elections, df_static], axis=1, join='outer')
+    df_data = pd.concat([df_fred__df_yahoo__merged__log__diff, dfs['df_elections'], dfs['df_static']], axis=1, join='outer')
+
 
     
-
-    plot_choice = input("Do you want to plot the graphs of df_fred & df_yahoo & final dataframe merged? (yes/no):").lower()
+    console.print("Do you want to plot the graphs of df_fred & df_yahoo & final dataframe merged? (yes/no):", style="bold yellow")
+    plot_choice = input().lower()
     if plot_choice == 'y' or plot_choice == 'yes':
-        plot_dataframes(df_fred__df_yahoo__merged, df_fred__df_yahoo__merged__log, df_fred__df_yahoo__merged__log__diff, df_data)
+        plot_dataframes({
+            "df_fred__df_yahoo__merged": df_fred__df_yahoo__merged, 
+            "df_fred__df_yahoo__merged__log": df_fred__df_yahoo__merged__log,
+            "df_fred__df_yahoo__merged__log__diff": df_fred__df_yahoo__merged__log__diff,
+            "df_data": df_data
+        })
 
 
     print("\n\n---------------------------------------------------------------------------------------------")
