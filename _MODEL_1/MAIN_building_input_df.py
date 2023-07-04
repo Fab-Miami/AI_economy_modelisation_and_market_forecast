@@ -364,55 +364,14 @@ def create_dataframes():
         # Create a dictionary with the name of the dataframe as key and the dataframe as value
         dfs[df_name] = getattr(sys.modules[__name__], func_name)() # Call the function with the name from df_list ( eg: get_fred_data() )
 
-    # df_fred         = get_fred_data()
-    # df_yahoo        = get_yahoo_data()
-    # df_elections    = get_elections_data()
-    # df_generator    = get_generator_data()
-    # df_static       = get_static_data()
-
+    # print those dataframes
     for df_name, df in dfs.items():
         print(f"[bold green]\n------------- {df_name.upper()} -------------[/bold green]")
         print(df)
-        # if df_name in df_list:
-        #     print(f"------------- {df_name.upper()} -------------")
-        #     print(df)
-        #     print("-----------------")
-        #     print(f"{df_name}.index", df.index)
-        #     print(f"\n{df_name}.columns", df.columns)
-        #     print("================================")
 
-    # print("\n\n------------- FRED -------------")
-    # print(df_fred)
-    # print("-----------------")
-    # print("df_fred.index", df_fred.index)
-    # print("\ndf_fred.columns", df_fred.columns)
-    # print("================================")
-
-    # print("------------- ELECTIONS -------------")
-    # print(df_elections)
-    # print("-----------------")
-    # print("df_elections.index", df_elections.index)
-    # print("\ndf_elections.columns", df_elections.columns)
-    # print("================================")
-
-    # print("------------- GENERATORS -------------")
-    # print(df_generator)
-    # print("-----------------")
-    # print("df_generator.index", df_generator.index)
-    # print("\ndf_generator.columns", df_generator.columns)
-    # print("================================")
-
-    # print("------------- STATIC -------------")
-    # print(df_static)
-    # print("-----------------")
-    # print("df_static.index", df_static.index)
-    # print("\ndf_static.columns", df_static.columns)
-    # print("================================")
-
-
+    # plot the dataframes?
     console.print("Do you want to plot the graphs? (yes/no):", style="bold yellow")
     plot_choice = input().lower()
-
     if plot_choice == 'y' or plot_choice == 'yes':
         print("\n\n== Printing those dataframes ==> df_list:", df_list, "\n\n")
         plot_dataframes(dfs)

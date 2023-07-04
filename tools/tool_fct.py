@@ -1,3 +1,4 @@
+import math
 import inspect
 import pandas as pd
 import seaborn as sns
@@ -41,25 +42,35 @@ def plot_columns_scaled(df, column_list=[]):
     plt.show()
 
 def plot_dataframes(dataframes):
-    for df_name, df in dataframes.items():
-        console.print(f"[bold green]\n------------- {df_name.upper()} -------------[/bold green]")
+    n = len(dataframes)
 
-        plt.figure(figsize=(10, 8))
+    # Calculate number of rows and columns for the subplots
+    rows = math.ceil(n / 2)  # Change divisor based on how many plots you want per row
+    cols = 2
+
+    # Create figure
+    fig, axs = plt.subplots(rows, cols, figsize=(7*cols, 5*rows))
+
+    for i, (df_name, df) in enumerate(dataframes.items()):
+        ax = axs[i//cols, i%cols]  # Determine the subplot to draw on
+
+        console.print(f"[bold cyan]\n Plotting: {df_name.upper()} [/bold cyan]")
 
         for col_name in df.columns:
             data = df[col_name]
             # Scale the data between 0 and 1, but only if data is numeric
             if np.issubdtype(df[col_name].dtype, np.number):
                 data_scaled = (data - data.min()) / (data.max() - data.min())
-                plt.plot(data_scaled, label=col_name)
+                ax.plot(data_scaled, label=col_name)
             else:
                 console.print(f"Skipping column {col_name} because it is not numeric", style="bold red")
 
-        plt.xlabel('Index')
-        plt.ylabel('Scaled Values')
-        plt.legend()
+        ax.set_xlabel('Index')
+        ax.set_ylabel('Scaled Values')
+        ax.legend()
 
-        plt.show()
+    plt.tight_layout()  # Ensure subplots do not overlap
+    plt.show()
 
 def plot_dataframes_OLD(dataframes):
     n = len(dataframes)
