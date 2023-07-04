@@ -86,7 +86,6 @@ def normalize_dataframe(df):
     return df
 
 
-
 def autocorrelation(df_results):
     """ Compute the autocorrelation matrix of the DataFrame """
     corr = df_results.corr()
