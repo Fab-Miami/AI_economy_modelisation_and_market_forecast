@@ -45,6 +45,7 @@ import yfinance as yf
 import pandas as pd
 from talib import RSI, MACD, BBANDS # technical analysis library
 from tools.tool_fct import *
+from tools.lstm_1 import *
 from functools import reduce
 #
 from rich import print
@@ -410,7 +411,7 @@ if __name__ == "__main__":
     data_set = create_data_set()
 
     # ------------------------- OUTPUT -----------------------
-    console.print("Do you want to trace the Autocorrelation? (1), or Print Stats (2), or Nothing (3):", style="bold yellow")
+    console.print("Do you want to trace the Autocorrelation? (1), or Print Stats (2), or Nothing (n):", style="bold yellow")
     user_input = input().lower()
 
     if user_input.lower() == '1':
@@ -423,7 +424,17 @@ if __name__ == "__main__":
         print("\nNumber of columns = ", len(data_set.columns))
         print("---------------------------------------------------------------------------------------------")
 
-    if user_input.lower() == '3':
+    if user_input.lower() == 'n':
         pass
 
-    print("-END-")
+    # ------------------------- RUN THE LSTM  -----------------------
+    console.print("Do you want to RUN THE MODEL? (yes/no):", style="bold yellow")
+    plot_choice = input().lower()
+    if plot_choice == 'y' or plot_choice == 'yes':
+        model, X_test, y_test = run_the_model(data_set, 200) # second param = number of epoch
+    else:
+        console.print("You chose not to run the model. Goodbye.", style="bold cyan")
+        sys.exit(0)
+
+    # ------------------------- TEST THE MODEL  -----------------------
+    test_the_model(model, X_test, y_test)
