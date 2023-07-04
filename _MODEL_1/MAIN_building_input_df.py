@@ -45,6 +45,7 @@ import yfinance as yf
 import pandas as pd
 from talib import RSI, MACD, BBANDS # technical analysis library
 from tools.tool_fct import *
+from functools import reduce
 #
 from rich import print
 from rich.console import Console
@@ -77,7 +78,7 @@ fred_series = [
     {'series_name': 'Money_Velocity', 'series_id': 'M1V', 'frequency': 'q'}, # Money Velocity (of spending)
     {'series_name': 'Credit_Card_Transactions', 'series_id': 'CCSA', 'frequency': 'm'}, # Credit Card Transactions
     {'series_name': 'PMI_Manufacturing', 'series_id': 'MANEMP', 'frequency': 'm'}, # Manufacturing Employment
-    {'series_name': 'Market_Stress', 'series_id': 'STLFSI', 'frequency': 'm'}, # Stress in the U.S. financial system using a variety of market and economic indicators.
+    {'series_name': 'Market_Stress', 'series_id': 'STLFSI4', 'frequency': 'm'}, # Stress in the U.S. financial system using a variety of market and economic indicators.
 ]
 
 quandl_series = [
@@ -112,7 +113,6 @@ class NasdaqCom:
             "end_date": observation_end,      # end date for the data
         }
         self.series = series
-
 
 
 # *************************************************************************************************
@@ -184,17 +184,21 @@ class FredOnline:
             df_data = pd.concat([df_data, df_result], axis=1)
         # as some recent values may not be yet known, we fill the last missing values with the last known value
         df_data.iloc[-10:] = df_data.iloc[-10:].fillna(method='ffill')
-        df_data.index.name = 'Date'
+
+        # Remove the time from the DateTime index
         df_data.index = pd.to_datetime(df_data.index)
+        df_data.index = df_data.index.date
+        df_data.index.name = 'Date'
 
         return df_data
+
 
 # *************************************************************************************************
 #                                       YAHOO FINANCE
 # -------------------------------------------------------------------------------------------------
 
 def get_yahoo_data():
-    file_path='saved_data_from_api/yahoo_results.csv'
+    file_path='../saved_data_from_api/yahoo_results.csv'
     if os.path.isfile(file_path):
         df_yahoo = pd.read_csv(file_path, index_col=0)
         df_yahoo.index = pd.to_datetime(df_yahoo.index)
@@ -206,17 +210,17 @@ def get_yahoo_data():
 
 def get_online_yahoo_data(start_date):
     # get data from yahoo
-    sp500           = yf.download('^GSPC', start=start_date)  # daily data
+    sp500  = yf.download('^GSPC', start=start_date)  # daily data
 
     # resample to monthly
-    sp500_monthly   = sp500.resample('M').mean()
+    sp500_monthly = sp500.resample('M').mean()
 
     # rename columns
-    sp500_monthly.rename(columns={'Close': 'SP500_Close'}, inplace=True)
-    sp500_monthly.rename(columns={'Volume': 'SP500_Volume'}, inplace=True)
+    sp500_monthly.rename(columns={'Close': 'SP500_close'}, inplace=True)
+    sp500_monthly.rename(columns={'Volume': 'SP500_volume'}, inplace=True)
 
     # build dataframe with all the data
-    df_yahoo = pd.concat([sp500_monthly['SP500_Close'],  sp500_monthly['SP500_Volume']], axis=1)
+    df_yahoo = pd.concat([sp500_monthly['SP500_close'],  sp500_monthly['SP500_volume']], axis=1)
     df_yahoo = df_yahoo.tz_localize(None)
 
     # shift index by one day (mean of December is the value of 1st of January)
@@ -278,7 +282,8 @@ def get_generator_data():
 
     merged_df = pd.concat(df_list, axis=1, join='outer')
     return merged_df
-    
+
+
 # *************************************************************************************************
 #                                       GET DATA FROM STATIC FILES
 # -------------------------------------------------------------------------------------------------
@@ -314,38 +319,13 @@ def get_static_data():
     # merge all dataframes in df_list
     merged_df = pd.concat(df_list, axis=1, join='inner')
 
-    print("++++++++++++++++++++++++++++++++++++++++++++")
-    print(merged_df)
-    print("++++++++++++++++++++++++++++++++++++++++++++")
+    # Remove the time from the DateTime index
+    merged_df.index = pd.to_datetime(merged_df.index)
+    merged_df.index = merged_df.index.date
+    merged_df.index.name = 'Date'
+
 
     return merged_df
-
-
-
-def get_static_data_OLD():
-    file_path = '../saved_data_from_static/'
-    all_files = [f for f in os.listdir(file_path) if f.endswith('.csv') and not f.startswith('RAW_')]
-
-    df_list = []
-
-    # MAKE SURE first column is named "date"
-    for file in all_files:
-        df = pd.read_csv(os.path.join(file_path, file))
-        df['Date'] = df['Date'].apply(parse_date)
-        df.index = df['Date']
-        df = df.drop("Date", axis=1)
-        print(f"{file}++++++++++++++++++++++++++++++++++++++++++++")
-        print(df)
-        print("++++++++++++++++++++++++++++++++++++++++++++")
-        df_list.append(df)
-
-    print("++++++++++++++++++++++++++++++++++++++++++++")
-    print(df_list)
-    print("++++++++++++++++++++++++++++++++++++++++++++")
-
-    merged_df = pd.concat(df_list, axis=1, join='outer')
-    return merged_df
-
 
 
 # *************************************************************************************************
@@ -354,9 +334,9 @@ def get_static_data_OLD():
 # *************************************************************************************************
 # *************************************************************************************************
 
-def create_dataframes():
+def create_data_set():
 
-    df_list = ["fred", "elections", "generator", "static"]
+    df_list = ["fred", "elections", "generator", "static"] # "yahoo" is not used anymore as I'm getting SPX from TadingView as a Static download
     dfs = {}
 
     for name in df_list:
@@ -365,20 +345,20 @@ def create_dataframes():
         # Create a dictionary with the name of the dataframe as key and the dataframe as value
         dfs[df_name] = getattr(sys.modules[__name__], func_name)() # Call the function with the name from df_list ( eg: get_fred_data() )
 
-    # normalize the dataframes
-    for name, df in dfs.items():
-        dfs[name] = normalize_dataframe(df)
-
-    # print those dataframes
+    # print the dataframes
     for df_name, df in dfs.items():
         print(f"[bold green]\n------------- {df_name.upper()} -------------[/bold green]")
         print(df)
+
+    # Normalize the dataframes and remove timezone
+    for name, df in dfs.items():
+        dfs[name] = normalize_dataframe(df)
+        # dfs[name].index = dfs[name].index.tz_localize(None)
 
     # plot the dataframes?
     console.print("Do you want to plot the graphs? (yes/no):", style="bold yellow")
     plot_choice = input().lower()
     if plot_choice == 'y' or plot_choice == 'yes':
-        print("\n\n== Printing those dataframes ==> df_list:", df_list, "\n\n")
         plot_dataframes(dfs)
 
     # printing missing values
@@ -386,97 +366,64 @@ def create_dataframes():
             print(f"\n[bold red]Missing values in {name}:[/bold red]")
             print(df.isna().sum())
 
+    # merge the dataframes
+    data_set = list(dfs.values())[0] # Start with the first dataframe
+    for df in list(dfs.values())[1:]: # Merge all other dataframes
+        data_set = data_set.merge(df, left_index=True, right_index=True, how='inner')
 
-
-    # merge those dataframes
-    df_fred__df_yahoo__merged = pd.concat([dfs['df_fred']], axis=1, join='outer')
-
-    # now take log and diff of all those data
-    df_fred__df_yahoo__merged__log = df_fred__df_yahoo__merged.apply(np.log)
-
-    # Calculate the difference between consecutive rows for each column in-place
-    df_fred__df_yahoo__merged__log__diff = df_fred__df_yahoo__merged__log.diff().dropna()
-
-
-    # add elections data AND static data
-    df_data = pd.concat([df_fred__df_yahoo__merged__log__diff, dfs['df_elections'], dfs['df_static']], axis=1, join='outer')
-
-
-    
     console.print("Do you want to plot the graphs of df_fred & df_yahoo & final dataframe merged? (yes/no):", style="bold yellow")
     plot_choice = input().lower()
     if plot_choice == 'y' or plot_choice == 'yes':
-        plot_dataframes({
-            "df_fred__df_yahoo__merged": df_fred__df_yahoo__merged, 
-            "df_fred__df_yahoo__merged__log": df_fred__df_yahoo__merged__log,
-            "df_fred__df_yahoo__merged__log__diff": df_fred__df_yahoo__merged__log__diff,
-            "df_data": df_data
-        })
-
-
-    print("\n\n---------------------------------------------------------------------------------------------")
-    print("df_data = ", df_data)
-    print("\ndf_data.index", df_data.index)
-    print("\ndf_data.columns", df_data.columns)
-    print("\nNumber of columns = ", len(df_data.columns))
-    print("---------------------------------------------------------------------------------------------")
+        data_set_dict = {'data_set': data_set}
+        plot_dataframes(data_set_dict)
 
 
 
 
-    # add RSI
-    df_data['SP500-RSI'] = RSI(df_data['SP500_Close'], timeperiod=14)
-    df_data['DOW-RSI'] = RSI(df_data['DOW_Close'], timeperiod=14)
-
-    # add MACD
-    df_data['SP500-MACD'], df_data['SP500-MACDsignal'], df_data['SP500-MACDhist'] = MACD(df_data['SP500_Close'], fastperiod=12, slowperiod=26, signalperiod=9)
-    df_data['DOW-MACD'], df_data['DOW-MACDsignal'], df_data['DOW-MACDhist'] = MACD(df_data['DOW_Close'], fastperiod=12, slowperiod=26, signalperiod=9)
-
-    # add Bollinger Bands
-    df_data['SP500-BBupper'], df_data['SP500-BBlower'], df_data['SP500-BBmiddle'] = BBANDS(df_data['SP500_Close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
-    df_data['DOW-BBupper'], df_data['DOW-BBlower'], df_data['DOW-BBmiddle'] = BBANDS(df_data['DOW_Close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
+    # Add indicators to the dataframe
+    data_set = add_indicators(data_set)
 
     # sort columns by name 
-    df_data.sort_index(axis=1, inplace=True)
+    data_set.sort_index(axis=1, inplace=True)
 
     # backfill missing values
-    df_data.fillna(method='bfill', inplace=True)
+    data_set.fillna(method='bfill', inplace=True)
 
     # Fill NaNs with interpolated values
-    print("\n\nNans in df_data before interpolation = ", df_data.isnull().sum().sum())
-    df_data.interpolate(method='linear', inplace=True)
-    print("Number of Nans after interpolation = ", df_data.isnull().sum().sum(), "\n\n")
+    print("\n\nNans in data_set before interpolation = ", data_set.isnull().sum().sum())
+    data_set.interpolate(method='linear', inplace=True)
+    print("Number of Nans after interpolation = ", data_set.isnull().sum().sum(), "\n\n")
+
+    print("data_set = ", data_set)
+    print("\ndata_set.index", data_set.index)
+    print("\ndata_set.columns", data_set.columns)
+    print("\nNumber of columns = ", len(data_set.columns))
+    print("[bold]---------------------------------------------------------------------------------------------\n\n[/bold]")
 
 
-    print(f"Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds")
-    print(df_data.columns)
+    print(f"[blue]Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds\n\n[/blue]")
 
-    return df_data
+    return data_set
 
 
 if __name__ == "__main__":
-    df_data = create_dataframes()
-
+    data_set = create_data_set()
 
     # ------------------------- OUTPUT -----------------------
-    print("\n\n--------------------------------------------------------------------------------------------------------------------------")
-    user_input = input("Do you want to trace the autocorrelation? (1), or plot_columns_scaled(df_data) (2), or print stats (3), or nothing (4): ")
+    console.print("Do you want to trace the Autocorrelation? (1), or Print Stats (2), or Nothing (3):", style="bold yellow")
+    user_input = input().lower()
 
     if user_input.lower() == '1':
-        autocorrelation(df_data)
+        autocorrelation(data_set)
 
     if user_input.lower() == '2':
-        # plot_columns_scaled(df_data, ['Unemployment Rate', 'Targeted Rate', 'Effective Rate'])
-        plot_columns_scaled(df_data)
-
-    if user_input.lower() == '3':
-        print("df_data = ", df_data)
-        print("\ndf_data.index", df_data.index)
-        print("\ndf_data.columns", df_data.columns)
-        print("\nNumber of columns = ", len(df_data.columns))
+        print("data_set = ", data_set)
+        print("\ndata_set.index", data_set.index)
+        print("\ndata_set.columns", data_set.columns)
+        print("\nNumber of columns = ", len(data_set.columns))
         print("---------------------------------------------------------------------------------------------")
 
-    if user_input.lower() == '4':
+    if user_input.lower() == '3':
         pass
 
     print("-END-")

@@ -20,53 +20,54 @@ def plot_columns(df, col_names):
     plt.legend()
     plt.show(block=False)
 
-def plot_columns_scaled(df, column_list=[]):
-    if len(column_list) == 0:
-        column_list =[]
-        for column in df.columns:
-            column_list.append(column)
-        col_names = column_list
-    else:
-        col_names = column_list
-
-    plt.figure(figsize=(10, 8))
-    for col_name in df.columns:
-        data = df[col_name]
-        # Scale the data between 0 and 1
-        data_scaled = (data - data.min()) / (data.max() - data.min())
-        plt.plot(data_scaled, label=col_name)
-    plt.xlabel('Index')
-    plt.ylabel('Scaled Values')
-    # set the size of the plt
-    plt.legend()
-    plt.show()
-
 
 def plot_dataframes(dataframes):
     n = len(dataframes)
 
-    # Calculate number of rows and columns for the subplots
-    rows = math.ceil(n / 2)  # Change divisor based on how many plots you want per row
-    cols = 2
-
-    # Create figure
-    fig, axs = plt.subplots(rows, cols, figsize=(7*cols, 5*rows))
-
-    for i, (df_name, df) in enumerate(dataframes.items()):
-        ax = axs[i//cols, i%cols]  # Determine the subplot to draw on
-
+    # Special case: only one dataframe
+    if n == 1:
+        df_name, df = list(dataframes.items())[0]
         console.print(f"[bold cyan]\n Plotting: {df_name.upper()} [/bold cyan]")
+        plt.figure(figsize=(10, 8))
 
         for col_name in df.columns:
             data = df[col_name]
-            ax.plot(data, label=col_name)
+            plt.plot(data, label=col_name)
 
-        ax.set_xlabel('Index')
-        ax.set_ylabel('Scaled Values')
-        ax.legend()
+        plt.xlabel('Index')
+        plt.ylabel('Scaled Values')
+        plt.legend()
 
-    plt.tight_layout()  # Ensure subplots do not overlap
-    plt.show()
+        plt.show()
+    else:
+        # Calculate number of rows and columns for the subplots
+        rows = math.ceil(n / 2)  # Change divisor based on how many plots you want per row
+        cols = 2
+
+        # Create figure
+        fig, axs = plt.subplots(rows, cols, figsize=(7*cols, 5*rows))
+
+        for i, (df_name, df) in enumerate(dataframes.items()):
+            ax = axs[i//cols, i%cols]  # Determine the subplot to draw on
+
+            console.print(f"[bold cyan]\n Plotting: {df_name.upper()} [/bold cyan]")
+
+            for col_name in df.columns:
+                data = df[col_name]
+                ax.plot(data, label=col_name)
+
+            ax.set_xlabel('Index')
+            ax.set_ylabel('Scaled Values')
+            ax.legend()
+
+        # If there are fewer plots than subplots, remove the empty subplots
+        if n < rows * cols:
+            for i in range(n, rows * cols):
+                fig.delaxes(axs.flatten()[i])
+
+        plt.tight_layout()  # Ensure subplots do not overlap
+        plt.show()
+
 
 
 def normalize_dataframe(df):
@@ -100,7 +101,7 @@ def autocorrelation(df_results):
                 fmt='.2f', 
                 vmin=-1, 
                 vmax=1,
-                mask=np.triu(np.ones_like(corr, dtype=np.bool)),
+                mask=np.triu(np.ones_like(corr, dtype=bool)),
                 annot_kws={"size": 6}, # make text smaller
                 cbar_kws={'label': 'Correlation'})
 
@@ -112,3 +113,25 @@ def autocorrelation(df_results):
     ax.set_xlabel("X-axis", fontsize=8)
     ax.set_ylabel("Y-axis", fontsize=8)
     plt.show()
+
+def add_indicators(data_set):
+    print("\n\n[bold]====> ADDING INDICATORS TO:[/bold]")
+    print(data_set.columns)
+    print("[bold]--------------------------------------------[/bold]")
+
+    # add RSI
+    data_set['SPX-RSI']  = RSI(data_set['SPX_close'], timeperiod=14)
+    data_set['DJI-RSI']  = RSI(data_set['DJI_close'], timeperiod=14)
+    data_set['IXIC-RSI'] = RSI(data_set['IXIC_close'], timeperiod=14)
+
+    # add MACD
+    data_set['SPX-MACD'], data_set['SPX-MACDsignal'], data_set['SPX-MACDhist'] = MACD(data_set['SPX_close'], fastperiod=12, slowperiod=26, signalperiod=9)
+    data_set['DJI-MACD'], data_set['DJI-MACDsignal'], data_set['DJI-MACDhist'] = MACD(data_set['DJI_close'], fastperiod=12, slowperiod=26, signalperiod=9)
+    data_set['IXIC-MACD'], data_set['IXIC-MACDsignal'], data_set['IXIC-MACDhist'] = MACD(data_set['IXIC_close'], fastperiod=12, slowperiod=26, signalperiod=9)
+
+    # add Bollinger Bands
+    data_set['SPX-BBupper'], data_set['SPX-BBlower'], data_set['SPX-BBmiddle'] = BBANDS(data_set['SPX_close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
+    data_set['DJI-BBupper'], data_set['DJI-BBlower'], data_set['DJI-BBmiddle'] = BBANDS(data_set['DJI_close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
+    data_set['IXIC-BBupper'], data_set['IXIC-BBlower'], data_set['IXIC-BBmiddle'] = BBANDS(data_set['IXIC_close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
+
+    return data_set
