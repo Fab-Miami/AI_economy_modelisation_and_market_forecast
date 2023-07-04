@@ -237,6 +237,7 @@ def get_elections_data():
     df_elections = df_elections.drop("Date", axis=1)
 
     df_elections_encoded = one_hot_encode_elections(df_elections)
+    df_elections_encoded = df_elections_encoded.astype(int) # convert to int
 
     return df_elections_encoded
 
@@ -363,6 +364,10 @@ def create_dataframes():
         df_name      = f"df_{name}"
         # Create a dictionary with the name of the dataframe as key and the dataframe as value
         dfs[df_name] = getattr(sys.modules[__name__], func_name)() # Call the function with the name from df_list ( eg: get_fred_data() )
+
+    # normalize the dataframes
+    for name, df in dfs.items():
+        dfs[name] = normalize_dataframe(df)
 
     # print those dataframes
     for df_name, df in dfs.items():

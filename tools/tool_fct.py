@@ -41,6 +41,7 @@ def plot_columns_scaled(df, column_list=[]):
     plt.legend()
     plt.show()
 
+
 def plot_dataframes(dataframes):
     n = len(dataframes)
 
@@ -58,12 +59,7 @@ def plot_dataframes(dataframes):
 
         for col_name in df.columns:
             data = df[col_name]
-            # Scale the data between 0 and 1, but only if data is numeric
-            if np.issubdtype(df[col_name].dtype, np.number):
-                data_scaled = (data - data.min()) / (data.max() - data.min())
-                ax.plot(data_scaled, label=col_name)
-            else:
-                console.print(f"Skipping column {col_name} because it is not numeric", style="bold red")
+            ax.plot(data, label=col_name)
 
         ax.set_xlabel('Index')
         ax.set_ylabel('Scaled Values')
@@ -72,48 +68,22 @@ def plot_dataframes(dataframes):
     plt.tight_layout()  # Ensure subplots do not overlap
     plt.show()
 
-def plot_dataframes_OLD(dataframes):
-    n = len(dataframes)
 
-    print("----------------------------------------------================================--------------------------------")
-    print("n: ", n)
-    print(type(dataframes))
-    for df in dataframes.items():
-        print(df)
-
-    columns = 2
-    rows = (n + columns - 1) // columns  # Round up the division
-
-    # Retrieve variable names
-    frame = inspect.currentframe().f_back
-    var_names = []
-    for var_name, var_val in frame.f_locals.items():
-        if id(var_val) in [id(df) for df in dataframes]:
-            var_names.append(var_name)
-
-    plt.figure(figsize=(10 * columns, 8 * rows))
-
-    # for i, df in enumerate(dataframes):
-    for df_name, df in dataframes.items():
-        # plt.subplot(rows, columns, i + 1)
-        # plt.title(f'{var_names[i]}')
-
-        print(df)
-
-        for col_name in df.columns:
-            data = df[col_name]
-            # Scale the data between 0 and 1, but only if data is numeric
-            if np.issubdtype(df[col_name].dtype, np.number):
-                data_scaled = (data - data.min()) / (data.max() - data.min())
-                plt.plot(data_scaled, label=col_name)
+def normalize_dataframe(df):
+    for col_name in df.columns:
+        # Check if data is numeric
+        if np.issubdtype(df[col_name].dtype, np.number):
+            max_val = df[col_name].max()
+            min_val = df[col_name].min()
+            # Check if all values are the same
+            if max_val != min_val:
+                # Scale the data between 0 and 1
+                df[col_name] = (df[col_name] - min_val) / (max_val - min_val)
             else:
-                print(f"Skipping column {col_name} because it is not numeric")
-        plt.xlabel('Index')
-        plt.ylabel('Scaled Values')
-        plt.legend()
-
-    plt.tight_layout()  # Adjust subplot spacing
-    plt.show()
+                df[col_name] = 0
+        else:
+            console.print(f"Skipping column {col_name} because it is not numeric", style="bold red")
+    return df
 
 
 
