@@ -1,12 +1,18 @@
 import pandas as pd
 import numpy as np
+#
+from rich import print
+from rich.console import Console
+console = Console()
+#
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import matplotlib.pyplot as plt
 
-def run_the_model(data_set, epochs):
+def create_the_model_V1(data_set, epochs):
+    dates = data_set.index
     # Prepare your features
     features = [col for col in data_set.columns if '-' in col]
     features = sorted(features, key=lambda x: x.split('-')[0])
@@ -21,7 +27,13 @@ def run_the_model(data_set, epochs):
     y = data_set['SPX_close'].values
 
     # Train/test split
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
+    train_size = int(len(X) * 0.8)  # 80% for training
+    X_train, X_test = X[:train_size], X[train_size:]
+    y_train, y_test = y[:train_size], y[train_size:]
+    dates_train, dates_test = dates[:train_size], dates[train_size:]
+
+    print("\n\ndates_train", dates_train)
+    print("dates_test", dates_test, "\n\n")
 
     # Build the LSTM model
     model = Sequential()
@@ -40,12 +52,13 @@ def run_the_model(data_set, epochs):
 
     # Evaluation
     loss = model.evaluate(X_test, y_test)
-    print("Test loss:", loss)
+    console.print("Test loss:", loss, style="bold cyan")
     
-    return model, X_test, y_test
+    return model, X_test, y_test, dates_test
 
 
-def test_the_model(model, X_test, y_test, max_price, min_price):
+
+def test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price):
     # Predicting on the test set
     y_pred = model.predict(X_test)
 
@@ -57,13 +70,13 @@ def test_the_model(model, X_test, y_test, max_price, min_price):
     mae = mean_absolute_error(y_test_rescaled, y_pred_rescaled)
     rmse = np.sqrt(mean_squared_error(y_test_rescaled, y_pred_rescaled))
 
-    print(f"MAE: {mae}")
-    print(f"RMSE: {rmse}")
+    console.print(f"MAE: {mae}", style="bold blue")
+    console.print(f"RMSE: {rmse}", style="bold  blue")
 
     # Plotting actual vs predicted values
     plt.figure(figsize=(10, 6))
-    plt.plot(y_test_rescaled, color='blue', label='Actual SPX close price')
-    plt.plot(y_pred_rescaled, color='red', label='Predicted SPX close price')
+    plt.plot(dates_test, y_test_rescaled, color='blue', label='Actual SPX close price')
+    plt.plot(dates_test, y_pred_rescaled, color='red', label='Predicted SPX close price')
     plt.title('SPX close price prediction')
     plt.xlabel('Time')
     plt.ylabel('SPX close price')

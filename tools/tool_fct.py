@@ -5,6 +5,7 @@ import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
 from talib import RSI, MACD, BBANDS
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 #
 from rich import print
 from rich.console import Console
@@ -114,6 +115,7 @@ def autocorrelation(df_results):
     ax.set_ylabel("Y-axis", fontsize=8)
     plt.show()
 
+
 def add_indicators(data_set):
     print("\n\n[bold]====> ADDING INDICATORS TO:[/bold]")
     print(data_set.columns)
@@ -136,9 +138,11 @@ def add_indicators(data_set):
 
     return data_set
 
+
 def normalize_dataframe(df):
     df = df.loc[:, df.nunique() != 1]
     max_values = df.max()
     min_values = df.min()
     normalized_df = (df - min_values) / (max_values - min_values)
     return normalized_df, max_values, min_values
+

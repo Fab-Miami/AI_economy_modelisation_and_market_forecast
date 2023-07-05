@@ -45,7 +45,7 @@ import yfinance as yf
 import pandas as pd
 from talib import RSI, MACD, BBANDS # technical analysis library
 from tools.tool_fct import *
-from tools.lstm_1 import *
+from tools.lstm_V1 import *
 from functools import reduce
 #
 from rich import print
@@ -431,16 +431,20 @@ if __name__ == "__main__":
     if user_input.lower() == 'n':
         pass
 
-    # ------------------------- RUN THE LSTM  -----------------------
-    console.print("Do you want to RUN THE MODEL? (yes/no):", style="bold yellow")
+    # --------------------- CREATE THE MODEL -----------------------
+    console.print("Do you want to CREATE THE MODEL? (yes/no):", style="bold yellow")
     plot_choice = input().lower()
     if plot_choice == 'y' or plot_choice == 'yes':
-        model, X_test, y_test = run_the_model(data_set, 50) # dat_set, epochs
+        model, X_test, y_test, dates_test = create_the_model_V1(data_set, 50) # dat_set, epochs
+        print("\n\nmodel = ", model)
+        print("\n\nX_test = ", X_test)
+        print("\n\ny_test = ", y_test)
+        print("\n\ndates_test = ", dates_test)
     else:
         console.print("You chose not to run the model. Goodbye.", style="bold cyan")
         sys.exit(0)
 
-    # ------------------------- TEST THE MODEL  -----------------------
+    # -------------------- TEST THE MODEL  -----------------------
     max_price = original_max_values['df_static']['SPX_close']
     min_price = original_min_values['df_static']['SPX_close']
-    test_the_model(model, X_test, y_test, max_price, min_price)
+    test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price)
