@@ -135,3 +135,10 @@ def add_indicators(data_set):
     data_set['IXIC-BBupper'], data_set['IXIC-BBlower'], data_set['IXIC-BBmiddle'] = BBANDS(data_set['IXIC_close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
 
     return data_set
+
+def normalize_dataframe(df):
+    df = df.loc[:, df.nunique() != 1]
+    max_values = df.max()
+    min_values = df.min()
+    normalized_df = (df - min_values) / (max_values - min_values)
+    return normalized_df, max_values, min_values

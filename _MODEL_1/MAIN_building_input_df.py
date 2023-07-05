@@ -351,10 +351,17 @@ def create_data_set():
         print(f"[bold green]\n------------- {df_name.upper()} -------------[/bold green]")
         print(df)
 
-    # Normalize the dataframes and remove timezone
+    # Normalize the dataframes
+    original_max_values = {}
+    original_min_values = {}
     for name, df in dfs.items():
-        dfs[name] = normalize_dataframe(df)
-        # dfs[name].index = dfs[name].index.tz_localize(None)
+        dfs[name], original_max_values[name], original_min_values[name] = normalize_dataframe(df)
+        print(name)
+
+    # print the normalized dataframes
+    for df_name, df in dfs.items():
+        print(f"[bold pink]\n------------- {df_name.upper()} normalized -------------[/bold pink]")
+        print(df)
 
     # plot the dataframes?
     console.print("Do you want to plot the graphs? (yes/no):", style="bold yellow")
@@ -377,9 +384,6 @@ def create_data_set():
     if plot_choice == 'y' or plot_choice == 'yes':
         data_set_dict = {'data_set': data_set}
         plot_dataframes(data_set_dict)
-
-
-
 
     # Add indicators to the dataframe
     data_set = add_indicators(data_set)
@@ -404,11 +408,11 @@ def create_data_set():
 
     print(f"[blue]Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds\n\n[/blue]")
 
-    return data_set
+    return data_set, original_max_values, original_min_values
 
 
 if __name__ == "__main__":
-    data_set = create_data_set()
+    data_set, original_max_values, original_min_values = create_data_set()
 
     # ------------------------- OUTPUT -----------------------
     console.print("Do you want to trace the Autocorrelation? (1), or Print Stats (2), or Nothing (n):", style="bold yellow")
@@ -431,10 +435,12 @@ if __name__ == "__main__":
     console.print("Do you want to RUN THE MODEL? (yes/no):", style="bold yellow")
     plot_choice = input().lower()
     if plot_choice == 'y' or plot_choice == 'yes':
-        model, X_test, y_test = run_the_model(data_set, 200) # second param = number of epoch
+        model, X_test, y_test = run_the_model(data_set, 50) # dat_set, epochs
     else:
         console.print("You chose not to run the model. Goodbye.", style="bold cyan")
         sys.exit(0)
 
     # ------------------------- TEST THE MODEL  -----------------------
-    test_the_model(model, X_test, y_test)
+    max_price = original_max_values['df_static']['SPX_close']
+    min_price = original_min_values['df_static']['SPX_close']
+    test_the_model(model, X_test, y_test, max_price, min_price)

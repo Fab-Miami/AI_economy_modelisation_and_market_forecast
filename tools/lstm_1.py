@@ -45,13 +45,13 @@ def run_the_model(data_set, epochs):
     return model, X_test, y_test
 
 
-def test_the_model(model, X_test, y_test):
+def test_the_model(model, X_test, y_test, max_price, min_price):
     # Predicting on the test set
     y_pred = model.predict(X_test)
 
     # Rescaling the predictions back to the original scale
-    y_test_rescaled = y_test #* (max_price - min_price) + min_price
-    y_pred_rescaled = y_pred #* (max_price - min_price) + min_price
+    y_test_rescaled = y_test * (max_price - min_price) + min_price
+    y_pred_rescaled = y_pred * (max_price - min_price) + min_price
 
     # Calculating MAE and RMSE
     mae = mean_absolute_error(y_test_rescaled, y_pred_rescaled)
