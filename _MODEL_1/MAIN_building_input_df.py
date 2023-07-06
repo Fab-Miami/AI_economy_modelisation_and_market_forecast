@@ -341,12 +341,11 @@ def create_data_set():
     for df_name, df in dfs.items():
         print(f"[bold green]\n------------- {df_name.upper()} -------------[/bold green]")
         print(df)
-        missing_dates = find_missing_dates(df)
-        if len(missing_dates) > 0:
-            print("[bold red]--- Missing dates ---[/bold red]")
-            print("[red]Missing dates:", missing_dates, "[/red]")
+        find_missing_dates(df)
+
 
     # Normalize the dataframes
+    print(f"\n[bold yellow]============> NORMALIZING DATAFRAMES <============[bold yellow]")
     original_max_values = {}
     original_min_values = {}
     for name, df in dfs.items():
@@ -356,6 +355,7 @@ def create_data_set():
     for df_name, df in dfs.items():
         print(f"[bold blue]\n------------- {df_name.upper()} normalized -------------[/bold blue]")
         print(df)
+        find_missing_dates(df)
 
     # plot the dataframes?
     console.print("Do you want to plot the graphs? (yes/no):", style="bold yellow")
@@ -369,16 +369,17 @@ def create_data_set():
             print(df.isna().sum())
 
     # merge the dataframes
+    print(f"\n[bold yellow]============> MERGING DATAFRAMES <============[bold yellow]")
     data_set = list(dfs.values())[0] # Start with the first dataframe
-    for df in list(dfs.values())[1:]: # Merge all other dataframes
+    data_set.index = data_set.index.to_period('M')  # Convert the index to year-month
+    for df in list(dfs.values())[1:]:  # Merge all other dataframes
+        df.index = df.index.to_period('M')  # Convert the index to year-month
         data_set = data_set.merge(df, left_index=True, right_index=True, how='inner')
+    # Convert index back to datetime format with first day of the month
+    data_set.index = data_set.index.to_timestamp()
 
-    missing_dates = find_missing_dates(data_set)
-    print("[bold]\n\n--- Missing dates in [green]data_set[/green] ---[/bold]")
-    if len(missing_dates) > 0:
-        print(f"[red]Missing dates:\n{missing_dates}[/red]\n")
-    else:
-        print("[bold green]No missing dates found in merged datadrames[/bold green]")
+    find_missing_dates(data_set)
+
 
     console.print("Do you want to plot the graphs of df_fred & df_yahoo & final dataframe merged? (yes/no):", style="bold yellow")
     plot_choice = input().lower()
@@ -436,8 +437,8 @@ if __name__ == "__main__":
     console.print("Do you want to CREATE THE MODEL? (yes/no):", style="bold yellow")
     plot_choice = input().lower()
     if plot_choice == 'y' or plot_choice == 'yes':
-        # model, X_test, y_test, dates_test = create_the_model_V1(data_set, 50) # dat_set, epochs
-        model, X_test, y_test, dates_test = create_the_model_V2(data_set, 50) # dat_set, epochs
+        model, X_test, y_test, dates_test = create_the_model_V1(data_set, 50) # dat_set, epochs
+        # model, X_test, y_test, dates_test = create_the_model_V2(data_set, 50) # dat_set, epochs
         # current_date with hours, minutes
         model.save(f"models/model_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.h5")
         print("\n\ndates_test = ", dates_test)
@@ -448,5 +449,5 @@ if __name__ == "__main__":
     # -------------------- TEST THE MODEL  -----------------------
     max_price = original_max_values['df_static']['SPX_close']
     min_price = original_min_values['df_static']['SPX_close']
-    # test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price)
-    test_the_model_V2(model, X_test, y_test, dates_test, max_price, min_price)
+    test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price)
+    # test_the_model_V2(model, X_test, y_test, dates_test, max_price, min_price)

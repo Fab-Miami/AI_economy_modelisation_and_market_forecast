@@ -148,12 +148,17 @@ def normalize_dataframe(df):
 
 
 def find_missing_dates(df):
+    print("[bold]\nMissing dates:[/bold]")
+
     # Ensure the dataframe is sorted by date
     df = df.sort_index()
 
-    # Get start and end dates
-    start_date = df.index[0]
-    end_date = df.index[-1]
+    # Get start and end dates, convert Period to Timestamp if necessary
+    start_date = df.index[0].to_timestamp() if isinstance(df.index[0], pd.Period) else df.index[0]
+    end_date = df.index[-1].to_timestamp() if isinstance(df.index[-1], pd.Period) else df.index[-1]
+
+    print(f"Start date: {start_date}")
+    print(f"End date: {end_date}")
 
     # Generate all possible year/month combinations between start and end date
     all_dates = pd.date_range(start=start_date, end=end_date, freq='MS')
@@ -161,11 +166,17 @@ def find_missing_dates(df):
     # Extract year and month only
     all_dates = all_dates.to_period('M')
 
-    # Extract year and month from dataframe's index
-    df_dates = df.index.to_period('M')
+    # Extract year and month from dataframe's index and convert to Period if necessary
+    df_dates = df.index.to_period('M') if isinstance(df.index, pd.DatetimeIndex) else df.index
 
     # Find the difference between the sets of dates to find the missing ones
     missing_dates = np.setdiff1d(all_dates, df_dates)
+    list_missing_dates = missing_dates.astype(str).tolist()
 
-    # Return as a list of year-month strings
-    return missing_dates.astype(str).tolist()
+    
+    if len(list_missing_dates) > 0:
+        print(f"[red]{list_missing_dates}[/red]\n")
+    else:
+        print("[bold green]No missing dates found[/bold green]\n")
+    
+    return
