@@ -40,13 +40,15 @@ import asyncio
 import aiohttp
 import numpy as np
 import time
-import datetime as datetime
+from datetime import datetime
 import yfinance as yf
 import pandas as pd
 from talib import RSI, MACD, BBANDS # technical analysis library
 from tools.tool_fct import *
 from tools.lstm_V1 import *
+from tools.lstm_V2 import *
 from functools import reduce
+from dateutil.parser import parse as parse_date
 #
 from rich import print
 from rich.console import Console
@@ -289,42 +291,31 @@ def get_generator_data():
 #                                       GET DATA FROM STATIC FILES
 # -------------------------------------------------------------------------------------------------
 
-def parse_date(date_str):
-    try:
-        dt = datetime.datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ')
-        dt = dt.replace(tzinfo=None)
-        dt = dt.date().strftime('%Y-%m-%d')
-    except ValueError:
-        dt = datetime.datetime.strptime(date_str, '%Y-%m-%d')
-        dt = dt.date().strftime('%Y-%m-%d')
-    return dt
+# def parse_date(date_str):
+#     try:
+#         dt = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ')
+#         dt = dt.replace(tzinfo=None)
+#         dt = dt.date().strftime('%Y-%m-%d')
+#     except ValueError:
+#         dt = datetime.strptime(date_str, '%Y-%m-%d')
+#         dt = dt.date().strftime('%Y-%m-%d')
+#     return dt
 
 def get_static_data():
-    import os
-    import pandas as pd
-    from dateutil.parser import parse as parse_date
-
     file_path = '../saved_data_from_static/'
     all_files = [f for f in os.listdir(file_path) if f.endswith('.csv') and not f.startswith('RAW_')]
 
     df_list = []
 
-    # MAKE SURE first column is named "date"
     for file in all_files:
-        df = pd.read_csv(os.path.join(file_path, file))
-        df['Date'] = df['Date'].apply(parse_date)
-        df.index = df['Date']
-        df = df.drop("Date", axis=1)
+        df = pd.read_csv(os.path.join(file_path, file), parse_dates=['Date'])
+        df['Date'] = pd.to_datetime(df['Date']).dt.tz_convert(None)  # convert to naive datetime
+        df['Date'] = df['Date'].dt.normalize()  # normalize to midnight (remove time component)
+        df.set_index('Date', inplace=True)
         df_list.append(df)
 
     # merge all dataframes in df_list
     merged_df = pd.concat(df_list, axis=1, join='inner')
-
-    # Remove the time from the DateTime index
-    merged_df.index = pd.to_datetime(merged_df.index)
-    merged_df.index = merged_df.index.date
-    merged_df.index.name = 'Date'
-
 
     return merged_df
 
@@ -350,17 +341,20 @@ def create_data_set():
     for df_name, df in dfs.items():
         print(f"[bold green]\n------------- {df_name.upper()} -------------[/bold green]")
         print(df)
+        missing_dates = find_missing_dates(df)
+        if len(missing_dates) > 0:
+            print("[bold red]--- Missing dates ---[/bold red]")
+            print("[red]Missing dates:", missing_dates, "[/red]")
 
     # Normalize the dataframes
     original_max_values = {}
     original_min_values = {}
     for name, df in dfs.items():
         dfs[name], original_max_values[name], original_min_values[name] = normalize_dataframe(df)
-        print(name)
 
     # print the normalized dataframes
     for df_name, df in dfs.items():
-        print(f"[bold pink]\n------------- {df_name.upper()} normalized -------------[/bold pink]")
+        print(f"[bold blue]\n------------- {df_name.upper()} normalized -------------[/bold blue]")
         print(df)
 
     # plot the dataframes?
@@ -378,6 +372,13 @@ def create_data_set():
     data_set = list(dfs.values())[0] # Start with the first dataframe
     for df in list(dfs.values())[1:]: # Merge all other dataframes
         data_set = data_set.merge(df, left_index=True, right_index=True, how='inner')
+
+    missing_dates = find_missing_dates(data_set)
+    print("[bold]\n\n--- Missing dates in [green]data_set[/green] ---[/bold]")
+    if len(missing_dates) > 0:
+        print(f"[red]Missing dates:\n{missing_dates}[/red]\n")
+    else:
+        print("[bold green]No missing dates found in merged datadrames[/bold green]")
 
     console.print("Do you want to plot the graphs of df_fred & df_yahoo & final dataframe merged? (yes/no):", style="bold yellow")
     plot_choice = input().lower()
@@ -435,10 +436,10 @@ if __name__ == "__main__":
     console.print("Do you want to CREATE THE MODEL? (yes/no):", style="bold yellow")
     plot_choice = input().lower()
     if plot_choice == 'y' or plot_choice == 'yes':
-        model, X_test, y_test, dates_test = create_the_model_V1(data_set, 50) # dat_set, epochs
-        print("\n\nmodel = ", model)
-        print("\n\nX_test = ", X_test)
-        print("\n\ny_test = ", y_test)
+        # model, X_test, y_test, dates_test = create_the_model_V1(data_set, 50) # dat_set, epochs
+        model, X_test, y_test, dates_test = create_the_model_V2(data_set, 50) # dat_set, epochs
+        # current_date with hours, minutes
+        model.save(f"models/model_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.h5")
         print("\n\ndates_test = ", dates_test)
     else:
         console.print("You chose not to run the model. Goodbye.", style="bold cyan")
@@ -447,4 +448,5 @@ if __name__ == "__main__":
     # -------------------- TEST THE MODEL  -----------------------
     max_price = original_max_values['df_static']['SPX_close']
     min_price = original_min_values['df_static']['SPX_close']
-    test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price)
+    # test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price)
+    test_the_model_V2(model, X_test, y_test, dates_test, max_price, min_price)

@@ -146,3 +146,26 @@ def normalize_dataframe(df):
     normalized_df = (df - min_values) / (max_values - min_values)
     return normalized_df, max_values, min_values
 
+
+def find_missing_dates(df):
+    # Ensure the dataframe is sorted by date
+    df = df.sort_index()
+
+    # Get start and end dates
+    start_date = df.index[0]
+    end_date = df.index[-1]
+
+    # Generate all possible year/month combinations between start and end date
+    all_dates = pd.date_range(start=start_date, end=end_date, freq='MS')
+
+    # Extract year and month only
+    all_dates = all_dates.to_period('M')
+
+    # Extract year and month from dataframe's index
+    df_dates = df.index.to_period('M')
+
+    # Find the difference between the sets of dates to find the missing ones
+    missing_dates = np.setdiff1d(all_dates, df_dates)
+
+    # Return as a list of year-month strings
+    return missing_dates.astype(str).tolist()
