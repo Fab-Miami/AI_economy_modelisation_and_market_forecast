@@ -47,6 +47,7 @@ from talib import RSI, MACD, BBANDS # technical analysis library
 from tools.tool_fct import *
 from tools.lstm_V1 import *
 from tools.lstm_V2 import *
+from tools.transformations import *
 from functools import reduce
 from dateutil.parser import parse as parse_date
 #
@@ -344,19 +345,6 @@ def create_data_set():
         find_missing_dates(df)
 
 
-    # Normalize the dataframes
-    print(f"\n[bold yellow]============> NORMALIZING DATAFRAMES <============[bold yellow]")
-    original_max_values = {}
-    original_min_values = {}
-    for name, df in dfs.items():
-        dfs[name], original_max_values[name], original_min_values[name] = normalize_dataframe(df)
-
-    # print the normalized dataframes
-    for df_name, df in dfs.items():
-        print(f"[bold blue]\n------------- {df_name.upper()} normalized -------------[/bold blue]")
-        print(df)
-        find_missing_dates(df)
-
     # plot the dataframes?
     console.print("Do you want to plot the graphs? (yes/no):", style="bold yellow")
     plot_choice = input().lower()
@@ -375,11 +363,10 @@ def create_data_set():
     for df in list(dfs.values())[1:]:  # Merge all other dataframes
         df.index = df.index.to_period('M')  # Convert the index to year-month
         data_set = data_set.merge(df, left_index=True, right_index=True, how='inner')
-    # Convert index back to datetime format with first day of the month
+    # convert index back to datetime format with first day of the month
     data_set.index = data_set.index.to_timestamp()
 
     find_missing_dates(data_set)
-
 
     console.print("Do you want to plot the graphs of df_fred & df_yahoo & final dataframe merged? (yes/no):", style="bold yellow")
     plot_choice = input().lower()
@@ -387,7 +374,7 @@ def create_data_set():
         data_set_dict = {'data_set': data_set}
         plot_dataframes(data_set_dict)
 
-    # Add indicators to the dataframe
+    # add indicators to the dataframe
     data_set = add_indicators(data_set)
 
     # sort columns by name 
@@ -396,18 +383,23 @@ def create_data_set():
     # backfill missing values
     data_set.fillna(method='bfill', inplace=True)
 
-    # Fill NaNs with interpolated values
+    # fill NaNs with interpolated values
     print("\n\nNans in data_set before interpolation = ", data_set.isnull().sum().sum())
     data_set.interpolate(method='linear', inplace=True)
     print("Number of Nans after interpolation = ", data_set.isnull().sum().sum(), "\n\n")
 
-    print("data_set = ", data_set)
-    print("\ndata_set.index", data_set.index)
-    print("\ndata_set.columns", data_set.columns)
-    print("\nNumber of columns = ", len(data_set.columns))
-    print("[bold]---------------------------------------------------------------------------------------------\n\n[/bold]")
+    # apply Transformations
+    data_set = transform_features(data_set)
+    print(f"[bold green]Transformations applied\n\n[/bold green]")
 
+    # normalize the dataframes
+    print(f"[bold yellow]============> NORMALIZING DATAFRAMES <============[bold yellow]\n\n")
+    original_max_values = {}
+    original_min_values = {}
+    for name, df in dfs.items():
+        dfs[name], original_max_values[name], original_min_values[name] = normalize_dataframe(df)
 
+    # print time elapsed
     print(f"[blue]Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds\n\n[/blue]")
 
     return data_set, original_max_values, original_min_values
@@ -417,7 +409,7 @@ if __name__ == "__main__":
     data_set, original_max_values, original_min_values = create_data_set()
 
     # ------------------------- OUTPUT -----------------------
-    console.print("Do you want to trace the Autocorrelation? (1), or Print Stats (2), or Nothing (n):", style="bold yellow")
+    console.print("Do you want to trace the Autocorrelation? (1), or Print Info (2), or Nothing (n):", style="bold yellow")
     user_input = input().lower()
 
     if user_input.lower() == '1':
@@ -428,7 +420,7 @@ if __name__ == "__main__":
         print("\ndata_set.index", data_set.index)
         print("\ndata_set.columns", data_set.columns)
         print("\nNumber of columns = ", len(data_set.columns))
-        print("---------------------------------------------------------------------------------------------")
+        print("[bold]---------------------------------------------------------------------------------------------\n\n[/bold]")
 
     if user_input.lower() == 'n':
         pass
@@ -440,7 +432,7 @@ if __name__ == "__main__":
         model, X_test, y_test, dates_test = create_the_model_V1(data_set, 50) # dat_set, epochs
         # model, X_test, y_test, dates_test = create_the_model_V2(data_set, 50) # dat_set, epochs
         # current_date with hours, minutes
-        model.save(f"models/model_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.h5")
+        model.save(f"../models/model_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.h5")
         print("\n\ndates_test = ", dates_test)
     else:
         console.print("You chose not to run the model. Goodbye.", style="bold cyan")
