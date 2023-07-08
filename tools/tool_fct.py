@@ -190,3 +190,10 @@ def normalized_for_plot(df):
     for name, df in df.items():
         dfs_plot[name], original_max_values[name], original_min_values[name] = normalize_dataframe(df)
     return dfs_plot
+
+
+def ask_to_plot(message, stuff):
+    console.print(message, style="bold yellow")
+    plot_choice = input().lower()
+    if plot_choice == 'y' or plot_choice == 'yes':
+        plot_dataframes(normalized_for_plot(stuff))

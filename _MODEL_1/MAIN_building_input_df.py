@@ -330,6 +330,7 @@ def get_static_data():
 def create_data_set():
 
     df_list = ["fred", "elections", "generator", "static"] # "yahoo" is not used anymore as I'm getting SPX from TadingView as a Static download
+    # df_list = ["static"]
     dfs = {}
 
     for name in df_list:
@@ -344,12 +345,7 @@ def create_data_set():
         print(df)
         find_missing_dates(df)
 
-
-    # plot the dataframes?
-    console.print("Do you want to plot the graphs? (yes/no):", style="bold yellow")
-    plot_choice = input().lower()
-    if plot_choice == 'y' or plot_choice == 'yes':
-        plot_dataframes(normalized_for_plot(dfs))
+    ask_to_plot("Do you want to plot all the data? (yes/no):", dfs)
 
     # printing missing values
     for name, df in dfs.items():
@@ -369,14 +365,12 @@ def create_data_set():
 
     find_missing_dates(data_set)
 
-    console.print("Do you want to plot of the MERGED dataframe? (yes/no):", style="bold yellow")
-    plot_choice = input().lower()
-    if plot_choice == 'y' or plot_choice == 'yes':
-        data_set_dict = {'data_set': data_set}
-        plot_dataframes(normalized_for_plot(data_set_dict))
+    ask_to_plot("Do you want to plot of the MERGED dataframe? (yes/no):", {'data_set': data_set})
 
     # add indicators to the dataframe
     data_set = add_indicators(data_set)
+
+    ask_to_plot("Do you want to plot of the MERGED dataframe WITH INDICATORS? (yes/no):", {'data_set': data_set})
 
     # sort columns by name 
     data_set.sort_index(axis=1, inplace=True)
@@ -391,14 +385,18 @@ def create_data_set():
 
     # apply Transformations
     data_set = transform_features(data_set)
-    print(f"[bold green]Transformations applied\n\n[/bold green]")
-
+    
     # normalize the dataframes
     print(f"[bold yellow]============> NORMALIZING DATAFRAMES <============[bold yellow]\n\n")
-    original_max_values = {}
-    original_min_values = {}
-    for name, df in dfs.items():
-        dfs[name], original_max_values[name], original_min_values[name] = normalize_dataframe(df)
+    original_max_values = data_set.max()
+    original_min_values = data_set.min()
+    print(f"[bold green]Original max values:\n\n[/bold green]", original_max_values)
+    print(f"\n[bold green]Original min values:\n\n[/bold green]", original_min_values)
+
+    # original_max_values = {}
+    # original_min_values = {}
+    # for name, df in dfs.items():
+    #     dfs[name], original_max_values[name], original_min_values[name] = normalize_dataframe(data_set)
 
     # print time elapsed
     print(f"[blue]Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds\n\n[/blue]")

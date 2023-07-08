@@ -12,14 +12,14 @@ def transform_features(data_set):
     macroeconomic_features = ['AAA_Bond_Rate', 'BAA_Bond_Rate', 'Consumer_Confidence_Index', 'Consumer_Price_Index', 
                               'Corporate_Profits', 'GDP', 'GDP per capita', 'Money_Velocity', 
                               'PMI_Manufacturing', 'Population', 'US_Debt', 'US_Market_Cap', 
-                              'US_Trade_Balance', 'Unemployment_Rate','US_Bonds_Rate_10y', 'US_Bonds_Rate_1y']
+                              'US_Trade_Balance', 'Unemployment_Rate','US_Bonds_Rate_10y', 'US_Bonds_Rate_1y', 'Credit_Card_Transactions', 'Effective_Rate', 'Market_Stress']
     
     technical_features  = ['DJI-BBlower', 'DJI-BBmiddle', 'DJI-BBupper', 'DJI-MACD', 'DJI-MACDhist', 
                           'DJI-MACDsignal', 'DJI-RSI', 'IXIC-BBlower', 'IXIC-BBmiddle', 'IXIC-BBupper', 
                           'IXIC-MACD', 'IXIC-MACDhist', 'IXIC-MACDsignal', 'IXIC-RSI', 'SPX-BBlower', 
                           'SPX-BBmiddle', 'SPX-BBupper', 'SPX-MACD', 'SPX-MACDhist', 'SPX-MACDsignal', 'SPX-RSI']
     
-    market_features = ['DJI_close', 'DJI_volume', 'IXIC_close', 'SPX_close', 'SPX_volume']
+    market_features = ['DJI_close', 'DJI_volume', 'IXIC_close', 'SPX_close', 'SPX_volume', 'IXIC_volume']
     
     political_features = ['House_DEM', 'House_REP', 'President_DEM', 'President_REP', 'Senate_DEM', 'Senate_REP']
 
@@ -51,6 +51,8 @@ def transform_features(data_set):
 
     # merge back together
     data_set_transformed = pd.concat([data_set_macro, data_set_market, data_set_technical, data_set_political], axis=1)
+
+    print(f"[bold green]Transformations applied\n\n[/bold green]")
     
     return data_set_transformed.dropna()  # drop rows with NaN values
 
