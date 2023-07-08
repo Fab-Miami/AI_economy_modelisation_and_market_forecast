@@ -71,21 +71,21 @@ def plot_dataframes(dataframes):
 
 
 
-def normalize_dataframe(df):
-    for col_name in df.columns:
-        # Check if data is numeric
-        if np.issubdtype(df[col_name].dtype, np.number):
-            max_val = df[col_name].max()
-            min_val = df[col_name].min()
-            # Check if all values are the same
-            if max_val != min_val:
-                # Scale the data between 0 and 1
-                df[col_name] = (df[col_name] - min_val) / (max_val - min_val)
-            else:
-                df[col_name] = 0
-        else:
-            console.print(f"Skipping column {col_name} because it is not numeric", style="bold red")
-    return df
+# def normalize_dataframe(df):
+#     for col_name in df.columns:
+#         # Check if data is numeric
+#         if np.issubdtype(df[col_name].dtype, np.number):
+#             max_val = df[col_name].max()
+#             min_val = df[col_name].min()
+#             # Check if all values are the same
+#             if max_val != min_val:
+#                 # Scale the data between 0 and 1
+#                 df[col_name] = (df[col_name] - min_val) / (max_val - min_val)
+#             else:
+#                 df[col_name] = 0
+#         else:
+#             console.print(f"Skipping column {col_name} because it is not numeric", style="bold red")
+#     return df
 
 
 def autocorrelation(df_results):
@@ -180,3 +180,13 @@ def find_missing_dates(df):
         print("[bold green]No missing dates found[/bold green]\n")
     
     return
+
+
+def normalized_for_plot(df):
+    print(f"[bold magenta]=> NORMALIZING JUST FOR PLOT[bold magenta]\n")
+    original_max_values = {}
+    original_min_values = {}
+    dfs_plot = {}
+    for name, df in df.items():
+        dfs_plot[name], original_max_values[name], original_min_values[name] = normalize_dataframe(df)
+    return dfs_plot

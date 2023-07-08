@@ -349,7 +349,7 @@ def create_data_set():
     console.print("Do you want to plot the graphs? (yes/no):", style="bold yellow")
     plot_choice = input().lower()
     if plot_choice == 'y' or plot_choice == 'yes':
-        plot_dataframes(dfs)
+        plot_dataframes(normalized_for_plot(dfs))
 
     # printing missing values
     for name, df in dfs.items():
@@ -359,6 +359,7 @@ def create_data_set():
     # merge the dataframes
     print(f"\n[bold yellow]============> MERGING DATAFRAMES <============[bold yellow]")
     data_set = list(dfs.values())[0] # Start with the first dataframe
+    data_set.index = pd.to_datetime(data_set.index) # Convert the index to datetime
     data_set.index = data_set.index.to_period('M')  # Convert the index to year-month
     for df in list(dfs.values())[1:]:  # Merge all other dataframes
         df.index = df.index.to_period('M')  # Convert the index to year-month
@@ -368,11 +369,11 @@ def create_data_set():
 
     find_missing_dates(data_set)
 
-    console.print("Do you want to plot the graphs of df_fred & df_yahoo & final dataframe merged? (yes/no):", style="bold yellow")
+    console.print("Do you want to plot of the MERGED dataframe? (yes/no):", style="bold yellow")
     plot_choice = input().lower()
     if plot_choice == 'y' or plot_choice == 'yes':
         data_set_dict = {'data_set': data_set}
-        plot_dataframes(data_set_dict)
+        plot_dataframes(normalized_for_plot(data_set_dict))
 
     # add indicators to the dataframe
     data_set = add_indicators(data_set)
