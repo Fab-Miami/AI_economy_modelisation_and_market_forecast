@@ -6,6 +6,31 @@ from rich.console import Console
 console = Console()
 #
 
+# define transformations
+def calc_pct_change(df):
+    return df.pct_change().dropna()
+
+
+def calc_diff(df):
+    return df.diff().dropna()
+
+
+def test_categorization(data_set, macroeconomic_features, technical_features, market_features, political_features):
+    all_categorized_features = set(macroeconomic_features + technical_features + market_features + political_features)
+    all_data_set_features = set(data_set.columns)
+    
+    # If any feature from the dataset is missing in the categorized features, print an error.
+    if not all_data_set_features.issubset(all_categorized_features):
+        missing_features = all_data_set_features.difference(all_categorized_features)
+        print(f"[bold red]The following features from the dataset are not categorized:[/bold red] [white]{missing_features}[/white]")
+    # If any feature in the categorized features is not in the dataset, print an error.
+    elif not all_categorized_features.issubset(all_data_set_features):
+        extra_features = all_categorized_features.difference(all_data_set_features)
+        print(f"[bold red]The following categorized features are not found in the dataset:[/bold red] [white]{extra_features}[/white]")
+    else:
+        print("[bold green]Features in the dataset are correctly categorized.[/bold green]")
+
+
 def transform_features(data_set):
     print("[bold yellow]============> APPLYING TRANSFORMATIONS <============[/bold yellow]")
     # define different groups of features
@@ -26,19 +51,17 @@ def transform_features(data_set):
     # test I'm not forgetting any NEW column I may add in the future
     test_categorization(data_set, macroeconomic_features, technical_features, market_features, political_features)
 
-    # define transformations
-    def calc_pct_change(df):
-        return df.pct_change().dropna()
-
-    def calc_diff(df):
-        return df.diff().dropna()
-    
     # store initial values before transformations
     initial_values = {
         'macroeconomic_features': data_set[macroeconomic_features].iloc[0],
         'market_features': data_set[market_features].iloc[0],
         'technical_features': data_set[technical_features].iloc[0]
     }
+
+    # print("\nType(initial_values): ", type(initial_values))
+    # print("\ninitial_values: ", initial_values)
+    # print("\ninitial_values['macroeconomic_features']: ", initial_values['macroeconomic_features'])
+    # print("\ninitial_values['macroeconomic_features']['Market_Stress']: ", initial_values['macroeconomic_features']['Market_Stress'])
 
     # apply transformations
     data_set_macro = calc_pct_change(data_set[macroeconomic_features])
@@ -49,6 +72,7 @@ def transform_features(data_set):
     # OR
     # data_set_market = calc_diff(data_set[market_features])
     #
+    # data_set_technical = calc_pct_change(data_set[technical_features])
     data_set_technical = calc_pct_change(data_set[technical_features])
     # OR
     # data_set_technical = calc_diff(data_set[technical_features])
@@ -62,19 +86,4 @@ def transform_features(data_set):
     
     return data_set_transformed.dropna(), initial_values  # drop rows with NaN values
 
-
-def test_categorization(data_set, macroeconomic_features, technical_features, market_features, political_features):
-    all_categorized_features = set(macroeconomic_features + technical_features + market_features + political_features)
-    all_data_set_features = set(data_set.columns)
-    
-    # If any feature from the dataset is missing in the categorized features, print an error.
-    if not all_data_set_features.issubset(all_categorized_features):
-        missing_features = all_data_set_features.difference(all_categorized_features)
-        print(f"[bold red]The following features from the dataset are not categorized:[/bold red] [white]{missing_features}[/white]")
-    # If any feature in the categorized features is not in the dataset, print an error.
-    elif not all_categorized_features.issubset(all_data_set_features):
-        extra_features = all_categorized_features.difference(all_data_set_features)
-        print(f"[bold red]The following categorized features are not found in the dataset:[/bold red] [white]{extra_features}[/white]")
-    else:
-        print("[bold green]Features in the dataset are correctly categorized.[/bold green]")
 
