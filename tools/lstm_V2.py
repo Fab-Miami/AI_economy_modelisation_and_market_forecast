@@ -74,6 +74,10 @@ def test_the_model_V2(model, X_test, y_test, dates_test, max_price, min_price):
     y_test_rescaled = y_test * (max_price - min_price) + min_price
     y_pred_rescaled = y_pred * (max_price - min_price) + min_price
 
+    # Compare the first few predictions to the actual values
+    for i in range(5):
+        print(f"Predicted: {y_pred_rescaled[i]}, Actual: {y_test_rescaled[i]}")
+
     # Calculating MAE and RMSE
     mae = mean_absolute_error(y_test_rescaled, y_pred_rescaled)
     rmse = np.sqrt(mean_squared_error(y_test_rescaled, y_pred_rescaled))

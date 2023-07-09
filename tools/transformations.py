@@ -8,7 +8,7 @@ console = Console()
 
 def transform_features(data_set):
     print("[bold yellow]============> APPLYING TRANSFORMATIONS <============[/bold yellow]")
-    # Define different groups of features
+    # define different groups of features
     macroeconomic_features = ['AAA_Bond_Rate', 'BAA_Bond_Rate', 'Consumer_Confidence_Index', 'Consumer_Price_Index', 
                               'Corporate_Profits', 'GDP', 'GDP per capita', 'Money_Velocity', 
                               'PMI_Manufacturing', 'Population', 'US_Debt', 'US_Market_Cap', 
@@ -19,25 +19,28 @@ def transform_features(data_set):
                           'IXIC-MACD', 'IXIC-MACDhist', 'IXIC-MACDsignal', 'IXIC-RSI', 'SPX-BBlower', 
                           'SPX-BBmiddle', 'SPX-BBupper', 'SPX-MACD', 'SPX-MACDhist', 'SPX-MACDsignal', 'SPX-RSI']
     
-    market_features = ['DJI_close', 'DJI_volume', 'IXIC_close', 'SPX_close', 'SPX_volume', 'IXIC_volume']
+    market_features = ['DJI_close', 'DJI_volume', 'IXIC_close', 'SPX_close', 'SPX_volume', 'IXIC_volume', 'IXIC_volume', 'Composite_VIX']
     
     political_features = ['House_DEM', 'House_REP', 'President_DEM', 'President_REP', 'Senate_DEM', 'Senate_REP']
 
     # test I'm not forgetting any NEW column I may add in the future
     test_categorization(data_set, macroeconomic_features, technical_features, market_features, political_features)
 
-    # Define transformations
+    # define transformations
     def calc_pct_change(df):
         return df.pct_change().dropna()
 
     def calc_diff(df):
         return df.diff().dropna()
+    
+    # store initial values before transformations
+    initial_values = {
+        'macroeconomic_features': data_set[macroeconomic_features].iloc[0],
+        'market_features': data_set[market_features].iloc[0],
+        'technical_features': data_set[technical_features].iloc[0]
+    }
 
-    def scale_features(df):
-        scaler = MinMaxScaler()
-        return pd.DataFrame(scaler.fit_transform(df), columns=df.columns, index=df.index)
-
-    # Apply transformations
+    # apply transformations
     data_set_macro = calc_pct_change(data_set[macroeconomic_features])
     # OR
     # data_set_macro = calc_diff(data_set[macroeconomic_features])
@@ -46,7 +49,10 @@ def transform_features(data_set):
     # OR
     # data_set_market = calc_diff(data_set[market_features])
     #
-    data_set_technical = scale_features(data_set[technical_features])
+    data_set_technical = calc_pct_change(data_set[technical_features])
+    # OR
+    # data_set_technical = calc_diff(data_set[technical_features])
+    #
     data_set_political = data_set[political_features] # No transformations
 
     # merge back together
@@ -54,7 +60,7 @@ def transform_features(data_set):
 
     print(f"[bold green]Transformations applied\n\n[/bold green]")
     
-    return data_set_transformed.dropna()  # drop rows with NaN values
+    return data_set_transformed.dropna(), initial_values  # drop rows with NaN values
 
 
 def test_categorization(data_set, macroeconomic_features, technical_features, market_features, political_features):
@@ -70,5 +76,5 @@ def test_categorization(data_set, macroeconomic_features, technical_features, ma
         extra_features = all_categorized_features.difference(all_data_set_features)
         print(f"[bold red]The following categorized features are not found in the dataset:[/bold red] [white]{extra_features}[/white]")
     else:
-        print("[bold green] features in the dataset are correctly categorized.[/bold green]")
+        print("[bold green]Features in the dataset are correctly categorized.[/bold green]")
 

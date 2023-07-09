@@ -50,6 +50,7 @@ from tools.lstm_V2 import *
 from tools.transformations import *
 from functools import reduce
 from dateutil.parser import parse as parse_date
+from sklearn.preprocessing import MinMaxScaler
 #
 from rich import print
 from rich.console import Console
@@ -345,6 +346,7 @@ def create_data_set():
         print(df)
         find_missing_dates(df)
 
+    # plot
     ask_to_plot("Do you want to plot all the data? (yes/no):", dfs)
 
     # printing missing values
@@ -363,13 +365,16 @@ def create_data_set():
     # convert index back to datetime format with first day of the month
     data_set.index = data_set.index.to_timestamp()
 
+    # find missing dates
     find_missing_dates(data_set)
 
+    # plot
     ask_to_plot("Do you want to plot of the MERGED dataframe? (yes/no):", {'data_set': data_set})
 
     # add indicators to the dataframe
     data_set = add_indicators(data_set)
 
+    # plot
     ask_to_plot("Do you want to plot of the MERGED dataframe WITH INDICATORS? (yes/no):", {'data_set': data_set})
 
     # sort columns by name 
@@ -384,28 +389,28 @@ def create_data_set():
     print("Number of Nans after interpolation = ", data_set.isnull().sum().sum(), "\n\n")
 
     # apply Transformations
-    data_set = transform_features(data_set)
+    data_set, initial_values = transform_features(data_set)
     
     # normalize the dataframes
     print(f"[bold yellow]============> NORMALIZING DATAFRAMES <============[bold yellow]\n\n")
     original_max_values = data_set.max()
     original_min_values = data_set.min()
+    scaler = MinMaxScaler()
+    data_set = pd.DataFrame(scaler.fit_transform(data_set), columns=data_set.columns, index=data_set.index)
     print(f"[bold green]Original max values:\n\n[/bold green]", original_max_values)
     print(f"\n[bold green]Original min values:\n\n[/bold green]", original_min_values)
 
-    # original_max_values = {}
-    # original_min_values = {}
-    # for name, df in dfs.items():
-    #     dfs[name], original_max_values[name], original_min_values[name] = normalize_dataframe(data_set)
+    # plot
+    ask_to_plot("Do you want to plot the FINAL data_set?:", {'data_set': data_set})
 
     # print time elapsed
     print(f"[blue]Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds\n\n[/blue]")
 
-    return data_set, original_max_values, original_min_values
+    return data_set, original_max_values, original_min_values, initial_values
 
 
 if __name__ == "__main__":
-    data_set, original_max_values, original_min_values = create_data_set()
+    data_set, original_max_values, original_min_values, initial_values = create_data_set()
 
     # ------------------------- OUTPUT -----------------------
     console.print("Do you want to trace the Autocorrelation? (1), or Print Info (2), or Nothing (n):", style="bold yellow")
@@ -438,7 +443,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     # -------------------- TEST THE MODEL  -----------------------
-    max_price = original_max_values['df_static']['SPX_close']
-    min_price = original_min_values['df_static']['SPX_close']
-    test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price)
+    max_price = original_max_values['SPX_close']
+    min_price = original_min_values['SPX_close']
+    test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price, initial_values)
     # test_the_model_V2(model, X_test, y_test, dates_test, max_price, min_price)

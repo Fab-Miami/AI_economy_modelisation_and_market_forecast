@@ -58,13 +58,52 @@ def create_the_model_V1(data_set, epochs):
 
 
 
-def test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price):
+# def test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price):
+#     # Predicting on the test set
+#     y_pred = model.predict(X_test)
+
+#     # Rescaling the predictions back to the original scale
+#     y_test_rescaled = y_test * (max_price - min_price) + min_price
+#     y_pred_rescaled = y_pred * (max_price - min_price) + min_price
+
+#     # Compare the first few predictions to the actual values
+#     for i in range(5):
+#         print(f"Predicted: {y_pred_rescaled[i]}, Actual: {y_test_rescaled[i]}")
+
+#     # Calculating MAE and RMSE
+#     mae = mean_absolute_error(y_test_rescaled, y_pred_rescaled)
+#     rmse = np.sqrt(mean_squared_error(y_test_rescaled, y_pred_rescaled))
+
+#     console.print(f"MAE: {mae}", style="bold blue")
+#     console.print(f"RMSE: {rmse}", style="bold  blue")
+
+#     # Plotting actual vs predicted values
+#     plt.figure(figsize=(10, 6))
+#     plt.plot(dates_test, y_test_rescaled, color='blue', label='Actual SPX close price')
+#     plt.plot(dates_test, y_pred_rescaled, color='red', label='Predicted SPX close price')
+#     plt.title('SPX close price prediction')
+#     plt.xlabel('Time')
+#     plt.ylabel('SPX close price')
+#     plt.grid(True)
+#     plt.legend()
+#     plt.show()
+
+def test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price, initial_values):
     # Predicting on the test set
     y_pred = model.predict(X_test)
 
+    # Reverse the transformation on the test and prediction sets
+    initial_value = initial_values['market_features']['SPX_close']
+    y_test_rev_trans = ((y_test + 1) * initial_value).cumprod()  # Assuming that percent change was the transformation
+    y_pred_rev_trans = ((y_pred + 1) * initial_value).cumprod()  # Assuming that percent change was the transformation
+
     # Rescaling the predictions back to the original scale
-    y_test_rescaled = y_test * (max_price - min_price) + min_price
-    y_pred_rescaled = y_pred * (max_price - min_price) + min_price
+    y_test_rescaled = y_test_rev_trans * (max_price - min_price) + min_price
+    y_pred_rescaled = y_pred_rev_trans * (max_price - min_price) + min_price
+
+    # Compare the first few predictions to the actual values
+    for i in range(5):
+        print(f"Predicted: {y_pred_rescaled[i]}, Actual: {y_test_rescaled[i]}")
 
     # Calculating MAE and RMSE
     mae = mean_absolute_error(y_test_rescaled, y_pred_rescaled)
@@ -83,3 +122,4 @@ def test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price):
     plt.grid(True)
     plt.legend()
     plt.show()
+
