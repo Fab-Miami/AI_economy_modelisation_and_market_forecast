@@ -293,16 +293,6 @@ def get_generator_data():
 #                                       GET DATA FROM STATIC FILES
 # -------------------------------------------------------------------------------------------------
 
-# def parse_date(date_str):
-#     try:
-#         dt = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%SZ')
-#         dt = dt.replace(tzinfo=None)
-#         dt = dt.date().strftime('%Y-%m-%d')
-#     except ValueError:
-#         dt = datetime.strptime(date_str, '%Y-%m-%d')
-#         dt = dt.date().strftime('%Y-%m-%d')
-#     return dt
-
 def get_static_data():
     file_path = '../saved_data_from_static/'
     all_files = [f for f in os.listdir(file_path) if f.endswith('.csv') and not f.startswith('RAW_')]
@@ -331,7 +321,7 @@ def get_static_data():
 def create_data_set():
 
     df_list = ["fred", "elections", "generator", "static"] # "yahoo" is not used anymore as I'm getting SPX from TadingView as a Static download
-    # df_list = ["static"]
+    df_list = ["static"]
     dfs = {}
 
     for name in df_list:
@@ -390,6 +380,9 @@ def create_data_set():
 
     # apply Transformations
     data_set, initial_values = transform_features(data_set)
+
+    # plot
+    ask_to_plot("Do you want to plot of the MERGED dataframe WITH TRANSFORMED FEATURES? (yes/no):", {'data_set': data_set}, normalize=False)
     
     # normalize the dataframes
     print(f"[bold yellow]============> NORMALIZING DATAFRAMES <============[bold yellow]\n\n")
@@ -401,7 +394,7 @@ def create_data_set():
     print(f"\n[bold green]Original min values:\n\n[/bold green]", original_min_values)
 
     # plot
-    ask_to_plot("Do you want to plot the FINAL data_set?:", {'data_set': data_set})
+    ask_to_plot("Do you want to plot the FINAL (TRANSFORMED & NORMALIZED) data_set?:", {'data_set': data_set}, normalize=False) # should bbe normalized anyway
 
     # print time elapsed
     print(f"[blue]Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds\n\n[/blue]")

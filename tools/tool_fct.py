@@ -192,8 +192,10 @@ def normalized_for_plot(df):
     return dfs_plot
 
 
-def ask_to_plot(message, stuff):
+def ask_to_plot(message, stuff_to_plot, normalize=True):
     console.print(message, style="bold yellow")
     plot_choice = input().lower()
     if plot_choice == 'y' or plot_choice == 'yes':
-        plot_dataframes(normalized_for_plot(stuff))
+        if normalize:
+            stuff_to_plot = normalized_for_plot(stuff_to_plot)
+        plot_dataframes(stuff_to_plot)
