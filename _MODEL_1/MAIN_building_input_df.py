@@ -35,6 +35,7 @@
 #
 import sys
 import os
+PATH = os.getcwd()
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import asyncio
 import aiohttp
@@ -125,7 +126,7 @@ class NasdaqCom:
 # -------------------------------------------------------------------------------------------------
 
 def get_fred_data():
-    file_path = f"../saved_data_from_api/fred_results.csv"
+    file_path = f'{PATH}/saved_data_from_api/fred_results.csv'
     if os.path.isfile(file_path):
         df_fred = pd.read_csv(file_path, index_col=0)
         df_fred.index = pd.to_datetime(df_fred.index)
@@ -203,7 +204,7 @@ class FredOnline:
 # -------------------------------------------------------------------------------------------------
 
 def get_yahoo_data():
-    file_path='../saved_data_from_api/yahoo_results.csv'
+    file_path = f'{PATH}/saved_data_from_api/yahoo_results.csv'
     if os.path.isfile(file_path):
         df_yahoo = pd.read_csv(file_path, index_col=0)
         df_yahoo.index = pd.to_datetime(df_yahoo.index)
@@ -273,7 +274,7 @@ def one_hot_encode_elections(df):
 # -------------------------------------------------------------------------------------------------
 
 def get_generator_data():
-    file_path = '../saved_data_from_generators/'
+    file_path = f'{PATH}/saved_data_from_generators/'
     all_files = [f for f in os.listdir(file_path) if f.endswith('.csv')]
 
     df_list = []
@@ -294,7 +295,7 @@ def get_generator_data():
 # -------------------------------------------------------------------------------------------------
 
 def get_static_data():
-    file_path = '../saved_data_from_static/'
+    file_path = f'{PATH}/saved_data_from_static/'
     all_files = [f for f in os.listdir(file_path) if f.endswith('.csv') and not f.startswith('RAW_')]
 
     df_list = []
