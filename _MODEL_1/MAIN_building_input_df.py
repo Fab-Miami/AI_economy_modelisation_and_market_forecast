@@ -130,7 +130,6 @@ def get_fred_data():
     if os.path.isfile(file_path):
         df_fred = pd.read_csv(file_path, index_col=0)
         df_fred.index = pd.to_datetime(df_fred.index)
-        print("[bold yellow]\n============> USING FRED SAVED DATA <============\n[/bold yellow]")
     else:
         fred = FredOnline(fred_series, start_date, end_date)
         df_fred = loop.run_until_complete(fred.get_api_results())
@@ -208,7 +207,6 @@ def get_yahoo_data():
     if os.path.isfile(file_path):
         df_yahoo = pd.read_csv(file_path, index_col=0)
         df_yahoo.index = pd.to_datetime(df_yahoo.index)
-        print("============> USING YAHOO SAVED DATA")
     else:
         df_yahoo = get_online_yahoo_data(start_date)
         df_yahoo.to_csv(file_path)
@@ -241,7 +239,7 @@ def get_online_yahoo_data(start_date):
 # -------------------------------------------------------------------------------------------------
 def get_elections_data():
     # US elections results (DEM = 1 ; REP = 2)
-    df_elections = pd.read_csv('../saved_data_elections/USelections.csv')
+    df_elections = pd.read_csv(f'{PATH}/saved_data_elections/USelections.csv')
     df_elections['Date'] = pd.to_datetime(df_elections['Date'], format='%Y-%m-%d')
     df_elections.index = pd.to_datetime(df_elections["Date"])
     df_elections = df_elections.drop("Date", axis=1)
@@ -276,7 +274,6 @@ def one_hot_encode_elections(df):
 def get_generator_data():
     file_path = f'{PATH}/saved_data_from_generators/'
     all_files = [f for f in os.listdir(file_path) if f.endswith('.csv')]
-
     df_list = []
 
     for file in all_files:
@@ -297,7 +294,6 @@ def get_generator_data():
 def get_static_data():
     file_path = f'{PATH}/saved_data_from_static/'
     all_files = [f for f in os.listdir(file_path) if f.endswith('.csv') and not f.startswith('RAW_')]
-
     df_list = []
 
     for file in all_files:
@@ -322,13 +318,14 @@ def get_static_data():
 def create_data_set():
 
     df_list = ["fred", "elections", "generator", "static"] # "yahoo" is not used anymore as I'm getting SPX from TadingView as a Static download
-    df_list = ["static"]
+    # df_list = ["static"]
     dfs = {}
 
     for name in df_list:
         func_name    = f"get_{name}_data"
         df_name      = f"df_{name}"
         # Create a dictionary with the name of the dataframe as key and the dataframe as value
+        print(f"[bold blue]===> Includes: {df_name}[/bold blue]")
         dfs[df_name] = getattr(sys.modules[__name__], func_name)() # Call the function with the name from df_list ( eg: get_fred_data() )
 
     # print the dataframes
@@ -404,6 +401,11 @@ def create_data_set():
 
 
 if __name__ == "__main__":
+    print(f"[bold blue]===================================================[/bold blue]")
+    print(f"[bold blue]====================== START ======================[/bold blue]")
+    print(f"[bold blue]===================================================\n[/bold blue]")
+
+
     data_set, original_max_values, original_min_values, initial_values = create_data_set()
 
     # ------------------------- OUTPUT -----------------------
