@@ -428,18 +428,31 @@ if __name__ == "__main__":
     # --------------------- CREATE THE MODEL -----------------------
     console.print("Do you want to CREATE THE MODEL? (yes/no):", style="bold yellow")
     plot_choice = input().lower()
+
     if plot_choice == 'y' or plot_choice == 'yes':
-        model, X_test, y_test, dates_test = create_the_model_V1(data_set, 50) # dat_set, epochs
-        # model, X_test, y_test, dates_test = create_the_model_V2(data_set, 50) # dat_set, epochs
-        # current_date with hours, minutes
-        model.save(f"../models/model_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.h5")
+        console.print("Which model version do you want to use? (1/2):", style="bold yellow")
+        model_choice = int(input().strip())
+
+        if model_choice == 1:
+            model, X_test, y_test, dates_test = create_the_model_V1(data_set, 50)
+        elif model_choice == 2:
+            model, X_test, y_test, dates_test = create_the_model_V2(data_set, 50)
+        else:
+            console.print("Invalid choice. Please choose 1 or 2.", style="bold red")
+            sys.exit(0)
+
+        model.save(f"{PATH}/models/model_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.h5")
         print("\n\ndates_test = ", dates_test)
     else:
-        console.print("You chose not to run the model. Goodbye.", style="bold cyan")
+        console.print("You chose not to create the model. Goodbye.", style="bold cyan")
         sys.exit(0)
 
     # -------------------- TEST THE MODEL  -----------------------
     max_price = original_max_values['SPX_close']
     min_price = original_min_values['SPX_close']
-    test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price, initial_values)
-    # test_the_model_V2(model, X_test, y_test, dates_test, max_price, min_price)
+
+    if model_choice == 1:
+        test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price, initial_values)
+    elif model_choice == 2:
+        test_the_model_V2(model, X_test, y_test, dates_test, max_price, min_price)
+
