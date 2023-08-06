@@ -54,8 +54,8 @@ def transform_features(data_set):
     # store initial values before transformations
     initial_values = {
         'macroeconomic_features': data_set[macroeconomic_features].iloc[0],
-        'market_features': data_set[market_features].iloc[0],
-        'technical_features': data_set[technical_features].iloc[0]
+        'technical_features': data_set[technical_features].iloc[0],
+        'market_features': data_set[market_features].iloc[0]
     }
 
     # print("\nType(initial_values): ", type(initial_values))
@@ -68,19 +68,18 @@ def transform_features(data_set):
     # OR
     # data_set_macro = calc_diff(data_set[macroeconomic_features])
     #
-    data_set_market = calc_pct_change(data_set[market_features])
-    # OR
-    # data_set_market = calc_diff(data_set[market_features])
-    #
-    # data_set_technical = calc_pct_change(data_set[technical_features])
     data_set_technical = calc_pct_change(data_set[technical_features])
     # OR
     # data_set_technical = calc_diff(data_set[technical_features])
     #
+    data_set_market = calc_pct_change(data_set[market_features])
+    # OR
+    # data_set_market = calc_diff(data_set[market_features])
+    #
     data_set_political = data_set[political_features] # No transformations
 
     # merge back together
-    data_set_transformed = pd.concat([data_set_macro, data_set_market, data_set_technical, data_set_political], axis=1)
+    data_set_transformed = pd.concat([data_set_macro, data_set_technical, data_set_market, data_set_political], axis=1)
 
     print(f"[bold green]Transformations applied\n\n[/bold green]")
     

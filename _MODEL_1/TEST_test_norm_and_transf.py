@@ -15,8 +15,8 @@ df = get_static_data()
 # drop some raws
 df.drop(columns=['IXIC_volume'], inplace=True)
 df.drop(columns=['IXIC_close'], inplace=True)
-df.drop(columns=['DJI_volume'], inplace=True)
-df.drop(columns=['DJI_close'], inplace=True)
+# df.drop(columns=['DJI_volume'], inplace=True)
+# df.drop(columns=['DJI_close'], inplace=True)
 
 
 # keep only the 20 first values

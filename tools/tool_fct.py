@@ -199,3 +199,11 @@ def ask_to_plot(message, stuff_to_plot, normalize=True):
         if normalize:
             stuff_to_plot = normalized_for_plot(stuff_to_plot)
         plot_dataframes(stuff_to_plot)
+
+def parse_parameters(args):
+    params = {}
+    for arg in args:
+        if '=' in arg:
+            key, value = arg.split('=', 1)
+            params[key] = value
+    return params

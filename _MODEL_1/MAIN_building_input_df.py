@@ -43,7 +43,7 @@ import numpy as np
 import time
 from datetime import datetime
 import yfinance as yf
-import pandas as pd
+import pandas as pd # V2.0.3
 from talib import RSI, MACD, BBANDS # technical analysis library
 from tools.tool_fct import *
 from tools.lstm_V1 import *
@@ -335,7 +335,8 @@ def create_data_set():
         find_missing_dates(df)
 
     # plot
-    ask_to_plot("Do you want to plot all the data? (yes/no):", dfs)
+    if QUESTIONS:
+        ask_to_plot("Do you want to plot all the data? (yes/no):", dfs)
 
     # printing missing values
     for name, df in dfs.items():
@@ -357,13 +358,15 @@ def create_data_set():
     find_missing_dates(data_set)
 
     # plot
-    ask_to_plot("Do you want to plot of the MERGED dataframe? (yes/no):", {'data_set': data_set})
+    if QUESTIONS:
+        ask_to_plot("Do you want to plot of the MERGED dataframe? (yes/no):", {'data_set': data_set})
 
     # add indicators to the dataframe
     data_set = add_indicators(data_set)
 
     # plot
-    ask_to_plot("Do you want to plot of the MERGED dataframe WITH INDICATORS? (yes/no):", {'data_set': data_set})
+    if QUESTIONS:
+        ask_to_plot("Do you want to plot of the MERGED dataframe WITH INDICATORS? (yes/no):", {'data_set': data_set})
 
     # sort columns by name 
     data_set.sort_index(axis=1, inplace=True)
@@ -378,21 +381,25 @@ def create_data_set():
 
     # apply Transformations
     data_set, initial_values = transform_features(data_set)
+    print("\n\nInitial values: ", initial_values)
 
     # plot
-    ask_to_plot("Do you want to plot of the MERGED dataframe WITH TRANSFORMED FEATURES? (yes/no):", {'data_set': data_set}, normalize=False)
+    if QUESTIONS:
+        ask_to_plot("Do you want to plot of the MERGED dataframe WITH TRANSFORMED FEATURES? (yes/no):", {'data_set': data_set}, normalize=False)
     
     # normalize the dataframes
     print(f"[bold yellow]============> NORMALIZING DATAFRAMES <============[bold yellow]\n\n")
     original_max_values = data_set.max()
     original_min_values = data_set.min()
     scaler = MinMaxScaler()
+
     data_set = pd.DataFrame(scaler.fit_transform(data_set), columns=data_set.columns, index=data_set.index)
     print(f"[bold green]Original max values:\n\n[/bold green]", original_max_values)
     print(f"\n[bold green]Original min values:\n\n[/bold green]", original_min_values)
 
     # plot
-    ask_to_plot("Do you want to plot the FINAL (TRANSFORMED & NORMALIZED) data_set?:", {'data_set': data_set}, normalize=False) # should bbe normalized anyway
+    if QUESTIONS:
+        ask_to_plot("Do you want to plot the FINAL (TRANSFORMED & NORMALIZED) data_set?:", {'data_set': data_set}, normalize=False) # should bbe normalized anyway
 
     # print time elapsed
     print(f"[blue]Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds\n\n[/blue]")
@@ -401,58 +408,65 @@ def create_data_set():
 
 
 if __name__ == "__main__":
-    print(f"[bold blue]===================================================[/bold blue]")
-    print(f"[bold blue]====================== START ======================[/bold blue]")
-    print(f"[bold blue]===================================================\n[/bold blue]")
+    print(f"[bold blue]=============================================================[/bold blue]")
+    print(f"[bold blue]=========================== START ===========================[/bold blue]")
+    print(f"[bold blue]=============================================================\n[/bold blue]")
 
+    # ------------------------- PARAMETERS -----------------------
+    EPOCHS = 300
+    TEST_MONTHS = 60
+    # ------------------------------------------------------------
+
+    parameters = parse_parameters(sys.argv[1:]) # param passed from command line
+    if parameters['model']:
+        QUESTIONS = False
 
     data_set, original_max_values, original_min_values, initial_values = create_data_set()
 
     # ------------------------- OUTPUT -----------------------
-    console.print("Do you want to trace the Autocorrelation? (1), or Print Info (2), or Nothing (n):", style="bold yellow")
-    user_input = input().lower()
+    if QUESTIONS:
+        console.print("Do you want to trace the Autocorrelation? (1), or Print Info (2), or Nothing (n):", style="bold yellow")
+        user_input = input().lower()
 
-    if user_input.lower() == '1':
-        autocorrelation(data_set)
-
-    if user_input.lower() == '2':
-        print("data_set = ", data_set)
-        print("\ndata_set.index", data_set.index)
-        print("\ndata_set.columns", data_set.columns)
-        print("\nNumber of columns = ", len(data_set.columns))
-        print("[bold]---------------------------------------------------------------------------------------------\n\n[/bold]")
-
-    if user_input.lower() == 'n':
-        pass
+        if user_input.lower() == '1':
+            autocorrelation(data_set)
+        if user_input.lower() == '2':
+            print("data_set = ", data_set)
+            print("\ndata_set.index", data_set.index)
+            print("\ndata_set.columns", data_set.columns)
+            print("\nNumber of columns = ", len(data_set.columns))
+            print("[bold]-----------------------------------\n\n[/bold]")
+        if user_input.lower() == 'n':
+            pass
 
     # --------------------- CREATE THE MODEL -----------------------
-    console.print("Do you want to CREATE THE MODEL? (yes/no):", style="bold yellow")
-    plot_choice = input().lower()
 
-    if plot_choice == 'y' or plot_choice == 'yes':
-        console.print("Which model version do you want to use? (1/2):", style="bold yellow")
-        model_choice = int(input().strip())
-
-        if model_choice == 1:
-            model, X_test, y_test, dates_test = create_the_model_V1(data_set, 50)
-        elif model_choice == 2:
-            model, X_test, y_test, dates_test = create_the_model_V2(data_set, 50)
-        else:
-            console.print("Invalid choice. Please choose 1 or 2.", style="bold red")
-            sys.exit(0)
-
-        model.save(f"{PATH}/models/model_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.h5")
-        print("\n\ndates_test = ", dates_test)
+    if QUESTIONS:
+        console.print("Which model version do you want to use? (n/1/2):", style="bold red")
+        model_choice = input().strip()
     else:
+        model_choice = parameters['model']
+
+
+    if model_choice == '1':
+        model, X_test, y_test, dates_test = create_the_model_V1(data_set, EPOCHS, TEST_MONTHS)
+    elif model_choice == '2':
+        model, X_test, y_test, dates_test = create_the_model_V2(data_set, EPOCHS, TEST_MONTHS)
+    elif model_choice == 'n':
         console.print("You chose not to create the model. Goodbye.", style="bold cyan")
         sys.exit(0)
+    else:
+        console.print("Bye", style="bold red")
+        sys.exit(0)
+
+    model.save(f"{PATH}/models/model_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.keras")
 
     # -------------------- TEST THE MODEL  -----------------------
     max_price = original_max_values['SPX_close']
     min_price = original_min_values['SPX_close']
 
-    if model_choice == 1:
+    if int(model_choice) == 1:
         test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price, initial_values)
-    elif model_choice == 2:
-        test_the_model_V2(model, X_test, y_test, dates_test, max_price, min_price)
+    elif int(model_choice) == 2:
+        test_the_model_V2(model, X_test, y_test, dates_test, max_price, min_price, initial_values)
 
