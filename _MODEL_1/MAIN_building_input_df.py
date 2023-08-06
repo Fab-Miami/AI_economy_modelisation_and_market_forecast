@@ -36,6 +36,7 @@
 import sys
 import os
 PATH = os.getcwd()
+print("PATH: ", PATH)
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import asyncio
 import aiohttp
@@ -126,7 +127,7 @@ class NasdaqCom:
 # -------------------------------------------------------------------------------------------------
 
 def get_fred_data():
-    file_path = f'{PATH}/saved_data_from_api/fred_results.csv'
+    file_path = f'{PATH}/../saved_data_from_api/fred_results.csv'
     if os.path.isfile(file_path):
         df_fred = pd.read_csv(file_path, index_col=0)
         df_fred.index = pd.to_datetime(df_fred.index)
@@ -203,7 +204,7 @@ class FredOnline:
 # -------------------------------------------------------------------------------------------------
 
 def get_yahoo_data():
-    file_path = f'{PATH}/saved_data_from_api/yahoo_results.csv'
+    file_path = f'{PATH}/../saved_data_from_api/yahoo_results.csv'
     if os.path.isfile(file_path):
         df_yahoo = pd.read_csv(file_path, index_col=0)
         df_yahoo.index = pd.to_datetime(df_yahoo.index)
@@ -239,7 +240,7 @@ def get_online_yahoo_data(start_date):
 # -------------------------------------------------------------------------------------------------
 def get_elections_data():
     # US elections results (DEM = 1 ; REP = 2)
-    df_elections = pd.read_csv(f'{PATH}/saved_data_elections/USelections.csv')
+    df_elections = pd.read_csv(f'{PATH}/../saved_data_elections/USelections.csv')
     df_elections['Date'] = pd.to_datetime(df_elections['Date'], format='%Y-%m-%d')
     df_elections.index = pd.to_datetime(df_elections["Date"])
     df_elections = df_elections.drop("Date", axis=1)
@@ -272,7 +273,7 @@ def one_hot_encode_elections(df):
 # -------------------------------------------------------------------------------------------------
 
 def get_generator_data():
-    file_path = f'{PATH}/saved_data_from_generators/'
+    file_path = f'{PATH}/../saved_data_from_generators/'
     all_files = [f for f in os.listdir(file_path) if f.endswith('.csv')]
     df_list = []
 
@@ -292,7 +293,7 @@ def get_generator_data():
 # -------------------------------------------------------------------------------------------------
 
 def get_static_data():
-    file_path = f'{PATH}/saved_data_from_static/'
+    file_path = f'{PATH}/../saved_data_from_static/'
     all_files = [f for f in os.listdir(file_path) if f.endswith('.csv') and not f.startswith('RAW_')]
     df_list = []
 
@@ -412,6 +413,9 @@ if __name__ == "__main__":
     print(f"[bold blue]=========================== START ===========================[/bold blue]")
     print(f"[bold blue]=============================================================\n[/bold blue]")
 
+    # cd _MODEL_1
+    # python MAIN_building_input_df.py model=1 
+
     # ------------------------- PARAMETERS -----------------------
     EPOCHS = 300
     TEST_MONTHS = 60
@@ -459,7 +463,7 @@ if __name__ == "__main__":
         console.print("Bye", style="bold red")
         sys.exit(0)
 
-    model.save(f"{PATH}/models/model_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.keras")
+    model.save(f"{PATH}/../models/model_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.keras")
 
     # -------------------- TEST THE MODEL  -----------------------
     max_price = original_max_values['SPX_close']

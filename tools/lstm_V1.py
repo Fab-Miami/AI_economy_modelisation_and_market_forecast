@@ -10,6 +10,7 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 def create_the_model_V1(data_set, epochs, test_momths=36):
     dates = data_set.index
@@ -106,13 +107,22 @@ def test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price, i
     console.print(f"Root Mean Squared Error: {rmse}", style="bold cyan")
     
     # 5. Plot the real versus predicted values
+
     plt.figure(figsize=(14, 7))
     plt.plot(dates_test, y_test_orig, label="Real Values", color="blue")
     plt.plot(dates_test, predictions_orig, label="Predictions", color="red", linestyle="dashed")
+
+    # Setting x-axis ticks for every month and rotating them
+    ax = plt.gca()  # Get current axis
+    ax.xaxis.set_major_locator(mdates.MonthLocator())  # Set major locator to month
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %Y'))  # Display month and year
+    plt.xticks(rotation=45)  # Rotate x-axis labels by 45 degrees
+
     plt.title("Real vs Predicted SPX_close Values")
     plt.xlabel("Date")
     plt.ylabel("Value")
     plt.legend()
+    plt.tight_layout()  # Ensure layout looks good with rotated labels
     plt.show()
     
     return mae, mse, rmse
