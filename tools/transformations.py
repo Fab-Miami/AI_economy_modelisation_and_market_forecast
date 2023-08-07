@@ -1,3 +1,4 @@
+import sys
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 #
@@ -26,7 +27,8 @@ def test_categorization(data_set, macroeconomic_features, technical_features, ma
     # If any feature in the categorized features is not in the dataset, print an error.
     elif not all_categorized_features.issubset(all_data_set_features):
         extra_features = all_categorized_features.difference(all_data_set_features)
-        print(f"[bold red]The following categorized features are not found in the dataset:[/bold red] [white]{extra_features}[/white]")
+        print(f"\n[bold red]/!\ The following categorized features are not found in the dataset:[/bold red] [white]{extra_features}[/white]")
+        sys.exit(0)
     else:
         print("[bold green]Features in the dataset are correctly categorized.[/bold green]")
 

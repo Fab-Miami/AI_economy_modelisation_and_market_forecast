@@ -365,6 +365,11 @@ def create_data_set():
     # add indicators to the dataframe
     data_set = add_indicators(data_set)
 
+    # SHIFT non "SPX" columns by one month
+    non_spx_columns = [col for col in data_set.columns if not col.startswith('SPX')]
+    for col in non_spx_columns:
+        data_set[col] = data_set[col].shift(1)
+
     # plot
     if QUESTIONS:
         ask_to_plot("Do you want to plot of the MERGED dataframe WITH INDICATORS? (yes/no):", {'data_set': data_set})
@@ -408,22 +413,23 @@ def create_data_set():
     return data_set, original_max_values, original_min_values, initial_values
 
 
+
+
+##################################################################### START #############################################################################################
 if __name__ == "__main__":
-    print(f"[bold blue]=============================================================[/bold blue]")
-    print(f"[bold blue]=========================== START ===========================[/bold blue]")
-    print(f"[bold blue]=============================================================\n[/bold blue]")
 
     # cd _MODEL_1
-    # python MAIN_building_input_df.py model=1 
+    # python MAIN_building_input_df.py model=1 epochs=1000 test_months=48
 
     # ------------------------- PARAMETERS -----------------------
-    EPOCHS = 300
-    TEST_MONTHS = 60
-    # ------------------------------------------------------------
-
+    DEFAULTS_EPOCHS = 800
+    DEFAULTS_TEST_MONTHS = 12
     parameters = parse_parameters(sys.argv[1:]) # param passed from command line
-    if parameters['model']:
-        QUESTIONS = False
+    QUESTIONS = False if 'model' in parameters and parameters['model'] else True
+    EPOCHS = int(parameters.get('epochs') or parameters.get('epoch') or DEFAULTS_EPOCHS)
+    TEST_MONTHS = int(parameters.get('test_months') or parameters.get('test_month') or DEFAULTS_TEST_MONTHS)
+
+    # ------------------------------------------------------------
 
     data_set, original_max_values, original_min_values, initial_values = create_data_set()
 
@@ -438,19 +444,16 @@ if __name__ == "__main__":
             print("data_set = ", data_set)
             print("\ndata_set.index", data_set.index)
             print("\ndata_set.columns", data_set.columns)
-            print("\nNumber of columns = ", len(data_set.columns))
-            print("[bold]-----------------------------------\n\n[/bold]")
+            print("\nNumber of columns = ", len(data_set.columns, "\n\n"))
         if user_input.lower() == 'n':
             pass
 
     # --------------------- CREATE THE MODEL -----------------------
-
     if QUESTIONS:
         console.print("Which model version do you want to use? (n/1/2):", style="bold red")
         model_choice = input().strip()
     else:
         model_choice = parameters['model']
-
 
     if model_choice == '1':
         model, X_test, y_test, dates_test = create_the_model_V1(data_set, EPOCHS, TEST_MONTHS)
