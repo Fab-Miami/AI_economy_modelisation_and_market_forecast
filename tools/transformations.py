@@ -33,7 +33,7 @@ def test_categorization(data_set, macroeconomic_features, technical_features, ma
         print("[bold green]Features in the dataset are correctly categorized.[/bold green]")
 
 
-def transform_features(data_set):
+def transform_features(data_set, train_size):
     print("[bold yellow]============> APPLYING TRANSFORMATIONS <============[/bold yellow]")
     # define different groups of features
     macroeconomic_features = ['AAA_Bond_Rate', 'BAA_Bond_Rate', 'Consumer_Confidence_Index', 'Consumer_Price_Index', 
@@ -53,17 +53,17 @@ def transform_features(data_set):
     # test I'm not forgetting any NEW column I may add in the future
     test_categorization(data_set, macroeconomic_features, technical_features, market_features, political_features)
 
-    # store initial values before transformations
-    initial_values = {
-        'macroeconomic_features': data_set[macroeconomic_features].iloc[0],
-        'technical_features': data_set[technical_features].iloc[0],
-        'market_features': data_set[market_features].iloc[0]
+    # store last values of train set before transformations
+    final_train_values = {
+        'macroeconomic_features': data_set[macroeconomic_features].iloc[train_size - 1],
+        'technical_features': data_set[technical_features].iloc[train_size - 1],
+        'market_features': data_set[market_features].iloc[train_size - 1]
     }
 
-    # print("\nType(initial_values): ", type(initial_values))
-    # print("\ninitial_values: ", initial_values)
-    # print("\ninitial_values['macroeconomic_features']: ", initial_values['macroeconomic_features'])
-    # print("\ninitial_values['macroeconomic_features']['Market_Stress']: ", initial_values['macroeconomic_features']['Market_Stress'])
+    # print("\nType(final_train_values): ", type(final_train_values))
+    # print("\final_train_values: ", final_train_values)
+    # print("\final_train_values['macroeconomic_features']: ", final_train_values['macroeconomic_features'])
+    # print("\final_train_values['macroeconomic_features']['Market_Stress']: ", final_train_values['macroeconomic_features']['Market_Stress'])
 
     # apply transformations
     data_set_macro = calc_pct_change(data_set[macroeconomic_features])
@@ -85,6 +85,6 @@ def transform_features(data_set):
 
     print(f"[bold green]Transformations applied\n\n[/bold green]")
     
-    return data_set_transformed.dropna(), initial_values  # drop rows with NaN values
+    return data_set_transformed.dropna(), final_train_values  # drop rows with NaN values
 
 

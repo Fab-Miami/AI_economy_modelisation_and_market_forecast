@@ -11,8 +11,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import matplotlib.ticker as mticker
 
-def create_the_model_V1(data_set, epochs, test_momths=36):
+
+def create_the_model_V1(data_set, epochs, test_months=36):
     dates = data_set.index
 
     # Prepare the features (RSI, MACD, etc.)
@@ -30,7 +32,7 @@ def create_the_model_V1(data_set, epochs, test_momths=36):
     print("\n\nlen(X) = ", len(X))
 
     # Train/test split
-    train_size = int(len(X) - test_momths)  # -XX months for testing
+    train_size = int(len(X) - test_months)  # -XX months for testing
     X_train, X_test = X[:train_size], X[train_size:]
     y_train, y_test = y[:train_size], y[train_size:]
     dates_train, dates_test = dates[:train_size], dates[train_size:]
@@ -80,9 +82,9 @@ def inverse_pct_change(pct_changed_series, initial_value):
     return inverted_series
 
 
-def test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price, initial_values=0):
+def test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price, final_train_values=0):
     print("--------------------------------------------")
-    print("               TESTING THE MODEL")
+    print("              TESTING THE MODEL")
     print("--------------------------------------------")
     # 1. Generate predictions using the model
     predictions = model.predict(X_test)
@@ -95,10 +97,9 @@ def test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price, i
     predictions_orig = predictions * (max_price - min_price) + min_price
 
     # 3. Inverse the percent change transformation
-    y_test_orig = inverse_pct_change(y_test_orig, initial_values['market_features']['SPX_close'])
-    predictions_orig = inverse_pct_change(predictions_orig, initial_values['market_features']['SPX_close'])
+    y_test_orig = inverse_pct_change(y_test_orig, final_train_values['market_features']['SPX_close'])
+    predictions_orig = inverse_pct_change(predictions_orig, final_train_values['market_features']['SPX_close'])
 
-    
     # 4. Calculate performance metrics
     mae = mean_absolute_error(y_test_orig, predictions_orig)
     mse = mean_squared_error(y_test_orig, predictions_orig)
@@ -109,7 +110,6 @@ def test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price, i
     console.print(f"Root Mean Squared Error: {rmse}", style="bold cyan")
     
     # 5. Plot the real versus predicted values
-
     plt.figure(figsize=(14, 7))
     plt.plot(dates_test, y_test_orig, label="Real Values", color="blue")
     plt.plot(dates_test, predictions_orig, label="Predictions", color="red", linestyle="dashed")
@@ -118,9 +118,15 @@ def test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price, i
     ax = plt.gca()  # Get current axis
     ax.xaxis.set_major_locator(mdates.MonthLocator())  # Set major locator to month
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %Y'))  # Display month and year
-    for month_tick in ax.get_xticks():
-        plt.axvline(x=month_tick, color='lightgrey', linestyle='--', linewidth=0.5)
-    plt.xticks(rotation=45) 
+
+    # Grid
+    ax.yaxis.grid(True, linestyle='--', linewidth=0.5, color='grey')
+    ax.xaxis.grid(True, linestyle='--', linewidth=0.5, color='lightgrey')
+
+    # Using MultipleLocator to set y-ticks every 100 units
+    ax.yaxis.set_major_locator(mticker.MultipleLocator(100))
+
+    plt.xticks(rotation=45, ha='right')
     plt.title("Real vs Predicted SPX_close Values")
     plt.xlabel("Date")
     plt.ylabel("Value")

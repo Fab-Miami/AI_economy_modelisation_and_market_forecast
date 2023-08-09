@@ -386,8 +386,9 @@ def create_data_set():
     print("Number of Nans after interpolation = ", data_set.isnull().sum().sum(), "\n\n")
 
     # apply Transformations
-    data_set, initial_values = transform_features(data_set)
-    print("\n\nInitial values: ", initial_values)
+    train_size = int(len(data_set) - TEST_MONTHS) 
+    data_set, final_train_values = transform_features(data_set, train_size)
+    print("\n\nFinal train values: ", final_train_values)
 
     # plot
     if QUESTIONS:
@@ -410,8 +411,7 @@ def create_data_set():
     # print time elapsed
     print(f"[blue]Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds\n\n[/blue]")
 
-    return data_set, original_max_values, original_min_values, initial_values
-
+    return data_set, original_max_values, original_min_values, final_train_values
 
 
 
@@ -419,7 +419,7 @@ def create_data_set():
 if __name__ == "__main__":
 
     # cd _MODEL_1
-    # python MAIN_building_input_df.py model=1 epochs=1000 test_months=48
+    # python MAIN__.py model=1 epochs=1000 test_months=48
 
     # ------------------------- PARAMETERS -----------------------
     DEFAULTS_EPOCHS = 800
@@ -431,7 +431,7 @@ if __name__ == "__main__":
 
     # ------------------------------------------------------------
 
-    data_set, original_max_values, original_min_values, initial_values = create_data_set()
+    data_set, original_max_values, original_min_values, final_train_values = create_data_set()
 
     # ------------------------- OUTPUT -----------------------
     if QUESTIONS:
@@ -473,7 +473,7 @@ if __name__ == "__main__":
     min_price = original_min_values['SPX_close']
 
     if int(model_choice) == 1:
-        test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price, initial_values)
+        test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price, final_train_values)
     elif int(model_choice) == 2:
-        test_the_model_V2(model, X_test, y_test, dates_test, max_price, min_price, initial_values)
+        test_the_model_V2(model, X_test, y_test, dates_test, max_price, min_price, final_train_values)
 
