@@ -422,8 +422,8 @@ if __name__ == "__main__":
     # python MAIN__.py model=1 epochs=1000 test_months=48
 
     # ------------------------- PARAMETERS -----------------------
-    DEFAULTS_EPOCHS = 800
-    DEFAULTS_TEST_MONTHS = 12
+    DEFAULTS_EPOCHS = 300
+    DEFAULTS_TEST_MONTHS = 36
     parameters = parse_parameters(sys.argv[1:]) # param passed from command line
     QUESTIONS = False if 'model' in parameters and parameters['model'] else True
     EPOCHS = int(parameters.get('epochs') or parameters.get('epoch') or DEFAULTS_EPOCHS)
@@ -457,8 +457,8 @@ if __name__ == "__main__":
 
     if model_choice == '1':
         model, X_test, y_test, dates_test = create_the_model_V1(data_set, EPOCHS, TEST_MONTHS)
-    elif model_choice == '2':
-        model, X_test, y_test, dates_test = create_the_model_V2(data_set, EPOCHS, TEST_MONTHS)
+    # elif model_choice == '2':
+    #     model, X_test, y_test, dates_test = create_the_model_V2(data_set, EPOCHS, TEST_MONTHS)
     elif model_choice == 'n':
         console.print("You chose not to create the model. Goodbye.", style="bold cyan")
         sys.exit(0)
@@ -474,6 +474,6 @@ if __name__ == "__main__":
 
     if int(model_choice) == 1:
         test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price, final_train_values)
-    elif int(model_choice) == 2:
-        test_the_model_V2(model, X_test, y_test, dates_test, max_price, min_price, final_train_values)
+    # elif int(model_choice) == 2:
+    #     test_the_model_V2(model, X_test, y_test, dates_test, max_price, min_price, final_train_values)
 
