@@ -53,6 +53,7 @@ from tools.transformations import *
 from functools import reduce
 from dateutil.parser import parse as parse_date
 from sklearn.preprocessing import MinMaxScaler
+from tabulate import tabulate
 #
 from rich import print
 from rich.console import Console
@@ -365,10 +366,15 @@ def create_data_set():
     # add indicators to the dataframe
     data_set = add_indicators(data_set)
 
-    # SHIFT non "SPX" columns by one month
+    data_set.to_csv('before_shift.csv', index=True)
+
+    # #################### SHIFT non "SPX" columns by one month ############################
     non_spx_columns = [col for col in data_set.columns if not col.startswith('SPX')]
     for col in non_spx_columns:
-        data_set[col] = data_set[col].shift(1)
+        data_set[col] = data_set[col].shift(2)
+    ########################################################################################
+
+    data_set.to_csv('after_shift.csv', index=True)
 
     # plot
     if QUESTIONS:
