@@ -472,7 +472,8 @@ if __name__ == "__main__":
         console.print("Bye", style="bold red")
         sys.exit(0)
 
-    model.save(f"{PATH}/../models/model_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.keras")
+    model.save(f"{PATH}/../models/model_{datetime.now().strftime('%Y-%m-%d_%H-%M')}", save_format="tf")
+
 
     # -------------------- TEST THE MODEL  -----------------------
     max_price = original_max_values['SPX_close']

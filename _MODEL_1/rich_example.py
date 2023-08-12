@@ -49,3 +49,27 @@ console.print(markdown)
 from rich import print
 
 print(":thumbs_up: Good job!")
+
+
+# Named Colors: Rich supports the standard set of CSS color names. Some examples include:
+# "red"
+# "green"
+# "blue"
+# "cyan"
+# "magenta"
+# "yellow"
+# "white"
+# "black"
+
+# Hex Colors: You can use hexadecimal color codes:
+# "#FF0000" for red
+# "#00FF00" for green
+# "#0000FF" for blue
+
+# RGB Colors: You can specify RGB colors using tuples:
+# (255, 0, 0) for red
+# (0, 255, 0) for green
+# (0, 0, 255) for blue
+ 
+# Example:
+# "bold red on white"
