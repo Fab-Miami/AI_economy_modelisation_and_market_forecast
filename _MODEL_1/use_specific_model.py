@@ -1,8 +1,10 @@
 import os
 from rich.console import Console
 from rich.table import Table
-from tensorflow.keras.models import load_model
-from tensorflow.keras.optimizers import Adam
+from keras.models import load_model
+from keras.optimizers import Adam
+from MAIN__ import create_data_set
+from tools.lstm_V1 import *
 
 console = Console()
 
@@ -34,4 +36,27 @@ if 0 <= choice < len(models):
 else:
     print("Invalid choice!")
 
-# You can now use the loaded model as needed
+# ------------------------------------------------
+
+# get the data:
+data_set, original_max_values, original_min_values, final_train_values = create_data_set()
+
+print("\n\nlen(data_set) = ", len(data_set))
+
+# # Prepare the features (RSI, MACD, etc.)
+# features = [col for col in data_set.columns if '-' in col]
+# features = sorted(features, key=lambda x: x.split('-')[0])
+# # Create 3D array
+# X_new = []
+# for feature in features:
+#     X_new.append(new_data_set[feature].values)
+# X_new = np.array(X_new).T.reshape(-1, len(features), 1)
+
+# # Now you can use the model to make predictions on this new data
+# predictions = model.predict(X_new)
+
+# # If you want to inverse the scaling and percent change transformation, you can use the same logic as in the use_model function
+# # Assuming max_price and min_price are the original maximum and minimum values of SPX_close for the new data
+# predictions_orig = predictions * (max_price - min_price) + min_price
+# predictions_orig = inverse_pct_change(predictions_orig, final_train_values['market_features']['SPX_close'])
+

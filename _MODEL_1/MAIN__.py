@@ -480,7 +480,7 @@ if __name__ == "__main__":
     min_price = original_min_values['SPX_close']
 
     if int(model_choice) == 1:
-        test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price, final_train_values)
+        use_model(model, X_test, y_test, dates_test, max_price, min_price, final_train_values)
     # elif int(model_choice) == 2:
     #     test_the_model_V2(model, X_test, y_test, dates_test, max_price, min_price, final_train_values)
 

@@ -65,14 +65,14 @@ def create_the_model_V1(data_set, epochs, test_months=36):
 
 # #############################################################################
 
-def inverse_pct_change(pct_changed_series, initial_value):
+def inverse_pct_change(y_test_orig, initial_value):
     """
     Inverts the percent change transformation.
     """
     # Start with the initial value
     inverted_series = [initial_value]
     
-    for change in pct_changed_series:
+    for change in y_test_orig:
         # Compute the next value based on the previous value and the percent change
         next_value = inverted_series[-1] * (1 + change)
         inverted_series.append(next_value)
@@ -82,7 +82,7 @@ def inverse_pct_change(pct_changed_series, initial_value):
     return inverted_series
 
 
-def test_the_model_V1(model, X_test, y_test, dates_test, max_price, min_price, final_train_values=0):
+def use_model(model, X_test, y_test, dates_test, max_price, min_price, final_train_values=0):
     print("--------------------------------------------")
     print("              TESTING THE MODEL")
     print("--------------------------------------------")
