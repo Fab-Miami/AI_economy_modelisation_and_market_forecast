@@ -82,7 +82,7 @@ def inverse_pct_change(y_test_orig, initial_value):
     return inverted_series
 
 
-def use_model(model, X_test, y_test, dates_test, max_price, min_price, final_train_values=0):
+def use_model(model, X_test, y_test, dates_test, max_price, min_price, final_train_values=0, model_path=None):
     print("--------------------------------------------")
     print("              TESTING THE MODEL")
     print("--------------------------------------------")
@@ -132,6 +132,11 @@ def use_model(model, X_test, y_test, dates_test, max_price, min_price, final_tra
     plt.ylabel("Value")
     plt.legend()
     plt.tight_layout()  # Ensure layout looks good with rotated labels
+
+    if model_path:
+        plot_path = f"{model_path}/assets/graph.png"
+        plt.savefig(plot_path)
+
     plt.show()
     
     return mae, mse, rmse

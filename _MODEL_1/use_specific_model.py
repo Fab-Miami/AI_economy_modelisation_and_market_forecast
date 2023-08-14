@@ -1,11 +1,12 @@
 import os
+PATH = os.getcwd()
 from rich.console import Console
 from rich.table import Table
 from keras.models import load_model
 from keras.optimizers import Adam
 from MAIN__ import create_data_set
+import matplotlib.pyplot as plt
 from tools.lstm_V1 import *
-
 console = Console()
 
 # List all directories in the models directory
@@ -38,25 +39,58 @@ else:
 
 # ------------------------------------------------
 
-# get the data:
+# get the data: we are getting the full dataframe, until last month. The goal being to predict the next month
 data_set, original_max_values, original_min_values, final_train_values = create_data_set()
 
-print("\n\nlen(data_set) = ", len(data_set))
+# Prepare the features (RSI, MACD, etc.)
+features = [col for col in data_set.columns if '-' in col]
+features = sorted(features, key=lambda x: x.split('-')[0])
 
-# # Prepare the features (RSI, MACD, etc.)
-# features = [col for col in data_set.columns if '-' in col]
-# features = sorted(features, key=lambda x: x.split('-')[0])
-# # Create 3D array
-# X_new = []
-# for feature in features:
-#     X_new.append(new_data_set[feature].values)
-# X_new = np.array(X_new).T.reshape(-1, len(features), 1)
+# Create 3D array
+X = []
+for feature in features:
+    X.append(data_set[feature].values)
+X = np.array(X).T.reshape(-1, len(features), 1)
 
-# # Now you can use the model to make predictions on this new data
-# predictions = model.predict(X_new)
+# Generate predictions using the model
+predictions = model.predict(X)
 
-# # If you want to inverse the scaling and percent change transformation, you can use the same logic as in the use_model function
-# # Assuming max_price and min_price are the original maximum and minimum values of SPX_close for the new data
-# predictions_orig = predictions * (max_price - min_price) + min_price
-# predictions_orig = inverse_pct_change(predictions_orig, final_train_values['market_features']['SPX_close'])
+max_price = original_max_values['SPX_close']
+min_price = original_min_values['SPX_close']
 
+# inverse the scaling of the predicted values
+predictions_orig = predictions * (max_price - min_price) + min_price
+
+# inverse the percent change transformation
+predictions_orig = inverse_pct_change(predictions_orig, final_train_values['market_features']['SPX_close'])
+
+
+# ------------------------------
+
+# get the actual SPX
+file_path = f'{PATH}/../saved_data_from_static/'
+file = "SP500_SPX_1m.csv"
+spx_actual_df = pd.read_csv(os.path.join(file_path, file), parse_dates=['Date'])
+spx_actual_df['Date'] = pd.to_datetime(spx_actual_df['Date']).dt.tz_convert(None)  # convert to naive datetime
+spx_actual_df['Date'] = spx_actual_df['Date'].dt.normalize()  # normalize to midnight (remove time component)
+spx_actual_df.set_index('Date', inplace=True)
+
+# graph the predictions
+dates = data_set.index
+spx_actual_df = spx_actual_df[['SPX_close']]
+predictions_df = pd.DataFrame(predictions_orig, index=dates, columns=['Predictions'])
+merged_df = pd.merge(spx_actual_df, predictions_df/90, left_index=True, right_index=True, how='outer')
+merged_df.fillna(method='ffill', inplace=True) # forward fill missing values
+
+plt.figure(figsize=(14, 7))
+plt.plot(merged_df.index, merged_df['SPX_close'], label="Real Values", color="blue")
+plt.plot(merged_df.index, merged_df['Predictions'], label="Predictions", color="red")
+plt.xticks(rotation=45, ha='right')
+plt.title("Predicted SPX_close Values")
+plt.xlabel("Date")
+plt.ylabel("Value")
+plt.legend()
+plt.tight_layout()  # Ensure layout looks good with rotated labels
+plt.show()
+
+print(data_set['SPX_close'].values)

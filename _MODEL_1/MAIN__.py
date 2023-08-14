@@ -33,6 +33,7 @@
 #
 #  conda activate py38
 #
+import json
 import sys
 import os
 PATH = os.getcwd()
@@ -317,7 +318,7 @@ def get_static_data():
 # *************************************************************************************************
 # *************************************************************************************************
 
-def create_data_set():
+def create_data_set(QUESTIONS=False, TEST_MONTHS=0):
 
     df_list = ["fred", "elections", "generator", "static"] # "yahoo" is not used anymore as I'm getting SPX from TadingView as a Static download
     # df_list = ["static"]
@@ -435,9 +436,13 @@ if __name__ == "__main__":
     EPOCHS = int(parameters.get('epochs') or parameters.get('epoch') or DEFAULTS_EPOCHS)
     TEST_MONTHS = int(parameters.get('test_months') or parameters.get('test_month') or DEFAULTS_TEST_MONTHS)
 
-    # ------------------------------------------------------------
+    # -------------------- CREATE THE DATASET ------------------------
 
     data_set, original_max_values, original_min_values, final_train_values = create_data_set()
+    metadata = {
+                'spx_max_price': original_max_values['SPX_close'],
+                'spx_min_price': original_min_values['SPX_close'],
+                }
 
     # ------------------------- OUTPUT -----------------------
     if QUESTIONS:
@@ -472,15 +477,22 @@ if __name__ == "__main__":
         console.print("Bye", style="bold red")
         sys.exit(0)
 
-    model.save(f"{PATH}/../models/model_{datetime.now().strftime('%Y-%m-%d_%H-%M')}", save_format="tf")
+    # save the model
+    timestamp = datetime.now().strftime('%Y-%m-%d')
+    model_path = f"{PATH}/../models/model_{timestamp}_M{model_choice}_E{EPOCHS}_TM{TEST_MONTHS}"
+    model.save(model_path, save_format="tf")
 
+    # save the metadata
+    metadata_path = f"{model_path}/assets/metadata_{timestamp}.json"
+    with open(metadata_path, 'w') as file:
+        json.dump(metadata, file)
 
     # -------------------- TEST THE MODEL  -----------------------
     max_price = original_max_values['SPX_close']
     min_price = original_min_values['SPX_close']
 
     if int(model_choice) == 1:
-        use_model(model, X_test, y_test, dates_test, max_price, min_price, final_train_values)
+        use_model(model, X_test, y_test, dates_test, max_price, min_price, final_train_values, model_path)
     # elif int(model_choice) == 2:
     #     test_the_model_V2(model, X_test, y_test, dates_test, max_price, min_price, final_train_values)
 
