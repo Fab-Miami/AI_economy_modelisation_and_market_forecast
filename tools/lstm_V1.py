@@ -96,7 +96,7 @@ def use_model(model, X_test, y_test, dates_test, max_price, min_price, final_tra
     y_test_orig = y_test * (max_price - min_price) + min_price
     predictions_orig = predictions * (max_price - min_price) + min_price
 
-    # 3. Inverse the percent change transformation
+    # 3. Inverse the percent change transformation /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\ PROBLEM HERE in inverse transformation
     y_test_orig = inverse_pct_change(y_test_orig, final_train_values['market_features']['SPX_close'])
     predictions_orig = inverse_pct_change(predictions_orig, final_train_values['market_features']['SPX_close'])
 

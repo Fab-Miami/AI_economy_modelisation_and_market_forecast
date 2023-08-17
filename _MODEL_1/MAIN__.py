@@ -408,8 +408,8 @@ def create_data_set(QUESTIONS=False, TEST_MONTHS=0):
     scaler = MinMaxScaler()
 
     data_set = pd.DataFrame(scaler.fit_transform(data_set), columns=data_set.columns, index=data_set.index)
-    print(f"[bold green]Original max values:\n\n[/bold green]", original_max_values)
-    print(f"\n[bold green]Original min values:\n\n[/bold green]", original_min_values)
+    print(f"[bold green]Original max values:[/bold green]\n", original_max_values)
+    print(f"\n[bold green]Original min values:[/bold green]\n", original_min_values)
 
     # plot
     if QUESTIONS:
@@ -427,6 +427,10 @@ if __name__ == "__main__":
 
     # cd _MODEL_1
     # python MAIN__.py model=1 epochs=1000 test_months=48
+    #
+    # AND TO TEST:
+    #
+    # python use_specific_model.py
 
     # ------------------------- PARAMETERS -----------------------
     DEFAULTS_EPOCHS = 300
