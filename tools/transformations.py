@@ -9,6 +9,7 @@ console = Console()
 
 # define transformations
 def calc_pct_change(df):
+    # return df
     return df.pct_change().dropna()
 
 
@@ -61,9 +62,14 @@ def transform_features(data_set, train_size):
     }
 
     # print("\nType(final_train_values): ", type(final_train_values))
-    # print("\final_train_values: ", final_train_values)
-    # print("\final_train_values['macroeconomic_features']: ", final_train_values['macroeconomic_features'])
-    # print("\final_train_values['macroeconomic_features']['Market_Stress']: ", final_train_values['macroeconomic_features']['Market_Stress'])
+    print("+++++++++++++++++++++++++++++++++++++++++++++++")
+    print("train_size: ", train_size)
+    print("+++++++++++++++++++++++++++++++++++++++++++++++")
+    print("data_set[market_features]", data_set[market_features])
+    print("+++++++++++++++++++++++++++++++++++++++++++++++")
+    print("\nfinal_train_values: ", final_train_values['market_features'])
+    # print("\nfinal_train_values['macroeconomic_features']: ", final_train_values['macroeconomic_features'])
+    # print("\nfinal_train_values['macroeconomic_features']['Market_Stress']: ", final_train_values['macroeconomic_features']['Market_Stress'])
 
     # apply transformations
     data_set_macro = calc_pct_change(data_set[macroeconomic_features])

@@ -40,7 +40,7 @@ def create_the_model_V1(data_set, epochs, test_months=36):
     print("\n\ndates_train", dates_train)
     print("dates_test", dates_test, "\n\n")
 
-    # Build the LSTM model
+    # STRUCTURE of the LSTM model -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     model = Sequential()
     model.add(LSTM(50, return_sequences=True, input_shape=(X_train.shape[1], 1)))
     model.add(Dropout(0.2))
@@ -48,6 +48,7 @@ def create_the_model_V1(data_set, epochs, test_months=36):
     model.add(Dropout(0.2))
     model.add(Dense(25))
     model.add(Dense(1))
+    # +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
     # Compile the model
     model.compile(optimizer='adam', loss='mean_squared_error')
@@ -97,6 +98,7 @@ def use_model(model, X_test, y_test, dates_test, max_price, min_price, final_tra
     predictions_orig = predictions * (max_price - min_price) + min_price
 
     # 3. Inverse the percent change transformation /!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\/!\ PROBLEM HERE in inverse transformation
+
     y_test_orig = inverse_pct_change(y_test_orig, final_train_values['market_features']['SPX_close'])
     predictions_orig = inverse_pct_change(predictions_orig, final_train_values['market_features']['SPX_close'])
 

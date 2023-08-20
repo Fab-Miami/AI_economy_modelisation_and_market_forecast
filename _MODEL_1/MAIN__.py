@@ -393,6 +393,9 @@ def create_data_set(QUESTIONS=False, TEST_MONTHS=0):
     print("Number of Nans after interpolation = ", data_set.isnull().sum().sum(), "\n\n")
 
     # apply Transformations
+    print("len(data_set) = ", len(data_set))
+    print("TEST_MONTHS = ", TEST_MONTHS)
+    print("++++++++++++++++++++++++++++++++++++++")
     train_size = int(len(data_set) - TEST_MONTHS) 
     data_set, final_train_values = transform_features(data_set, train_size)
     print("\n\nFinal train values: ", final_train_values)
@@ -442,7 +445,7 @@ if __name__ == "__main__":
 
     # -------------------- CREATE THE DATASET ------------------------
 
-    data_set, original_max_values, original_min_values, final_train_values = create_data_set()
+    data_set, original_max_values, original_min_values, final_train_values = create_data_set(QUESTIONS, TEST_MONTHS)
     metadata = {
                 'spx_max_price': original_max_values['SPX_close'],
                 'spx_min_price': original_min_values['SPX_close'],
