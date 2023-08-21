@@ -56,20 +56,22 @@ def transform_features(data_set, train_size):
 
     # store last values of train set before transformations
     final_train_values = {
-        'macroeconomic_features': data_set[macroeconomic_features].iloc[train_size - 1],
-        'technical_features': data_set[technical_features].iloc[train_size - 1],
-        'market_features': data_set[market_features].iloc[train_size - 1]
+        'macroeconomic_features': data_set[macroeconomic_features].iloc[train_size - 1].to_dict(),
+        'technical_features': data_set[technical_features].iloc[train_size - 1].to_dict(),
+        'market_features': data_set[market_features].iloc[train_size - 1].to_dict()
     }
 
+    # print("+++++++++++++++++++++++++++++++++++++++++++++++")
     # print("\nType(final_train_values): ", type(final_train_values))
-    print("+++++++++++++++++++++++++++++++++++++++++++++++")
-    print("train_size: ", train_size)
-    print("+++++++++++++++++++++++++++++++++++++++++++++++")
-    print("data_set[market_features]", data_set[market_features])
-    print("+++++++++++++++++++++++++++++++++++++++++++++++")
-    print("\nfinal_train_values: ", final_train_values['market_features'])
+    # print("+++++++++++++++++++++++++++++++++++++++++++++++")
+    # print("train_size: ", train_size)
+    # print("+++++++++++++++++++++++++++++++++++++++++++++++")
+    # print("data_set[market_features]", data_set[market_features])
+    # print("+++++++++++++++++++++++++++++++++++++++++++++++")
+    # print("\nfinal_train_values: ", final_train_values['market_features'])
     # print("\nfinal_train_values['macroeconomic_features']: ", final_train_values['macroeconomic_features'])
     # print("\nfinal_train_values['macroeconomic_features']['Market_Stress']: ", final_train_values['macroeconomic_features']['Market_Stress'])
+    # print("+++++++++++++++++++++++++++++++++++++++++++++++")
 
     # apply transformations
     data_set_macro = calc_pct_change(data_set[macroeconomic_features])

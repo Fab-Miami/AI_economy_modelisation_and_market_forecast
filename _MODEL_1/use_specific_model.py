@@ -1,4 +1,5 @@
 import os
+from art import *
 PATH = os.getcwd()
 from rich.console import Console
 from rich.table import Table
@@ -7,12 +8,15 @@ from keras.optimizers import Adam
 from MAIN__ import create_data_set
 import matplotlib.pyplot as plt
 from tools.lstm_V1 import *
+import matplotlib.ticker as mticker
+from matplotlib.dates import MonthLocator
 console = Console()
 
 # List all directories in the models directory
 model_path = '/Users/c/Desktop/AI/proto1/models'
 models = [f for f in os.listdir(model_path) if os.path.isdir(os.path.join(model_path, f))]
 
+print(f"[bold yellow]\n{text2art('Choose a model', font='small')}[/bold yellow]")
 # Print models with numbers
 table = Table(show_header=True, header_style="bold magenta")
 table.add_column("ID", style="dim", width=10)
@@ -40,7 +44,7 @@ else:
 # ------------------------------------------------
 
 # get the data: we are getting the full dataframe, until last month. The goal being to predict the next month
-data_set, original_max_values, original_min_values, final_train_values = create_data_set()
+data_set, original_max_values, original_min_values, final_train_values, shift_months = create_data_set()
 
 # Prepare the features (RSI, MACD, etc.)
 features = [col for col in data_set.columns if '-' in col]
@@ -72,6 +76,7 @@ file_path = f'{PATH}/../saved_data_from_static/'
 file = "SP500_SPX_1m.csv"
 spx_actual_df = pd.read_csv(os.path.join(file_path, file), parse_dates=['Date'])
 spx_actual_df['Date'] = pd.to_datetime(spx_actual_df['Date']).dt.tz_convert(None)  # convert to naive datetime
+spx_actual_df['Date'] = spx_actual_df['Date'].apply(lambda date: date.replace(day=1))  # set day to 1st of the month
 spx_actual_df['Date'] = spx_actual_df['Date'].dt.normalize()  # normalize to midnight (remove time component)
 spx_actual_df.set_index('Date', inplace=True)
 
@@ -79,12 +84,28 @@ spx_actual_df.set_index('Date', inplace=True)
 dates = data_set.index
 spx_actual_df = spx_actual_df[['SPX_close']]
 predictions_df = pd.DataFrame(predictions_orig, index=dates, columns=['Predictions'])
-merged_df = pd.merge(spx_actual_df, predictions_df/90, left_index=True, right_index=True, how='outer')
+merged_df = pd.merge(spx_actual_df, predictions_df, left_index=True, right_index=True, how='outer')
 merged_df.fillna(method='ffill', inplace=True) # forward fill missing values
 
+merged_df = merged_df.iloc[-36:]
+
+# ---------- Plot ---------- 
 plt.figure(figsize=(14, 7))
 plt.plot(merged_df.index, merged_df['SPX_close'], label="Real Values", color="blue")
-plt.plot(merged_df.index, merged_df['Predictions'], label="Predictions", color="red")
+plt.plot(merged_df.index, merged_df['Predictions']/15.7, label="Predictions", color="red")
+
+# One tick per month
+locator = MonthLocator()
+plt.gca().xaxis.set_major_locator(locator)
+
+ax = plt.gca()  # Get current axis
+# Grid
+ax.yaxis.grid(True, linestyle='--', linewidth=0.5, color='grey')
+ax.xaxis.grid(True, linestyle='--', linewidth=0.5, color='lightgrey')
+
+# Using MultipleLocator to set y-ticks every 100 units
+ax.yaxis.set_major_locator(mticker.MultipleLocator(100))
+
 plt.xticks(rotation=45, ha='right')
 plt.title("Predicted SPX_close Values")
 plt.xlabel("Date")

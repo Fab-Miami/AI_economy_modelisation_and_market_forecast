@@ -37,7 +37,6 @@ import json
 import sys
 import os
 PATH = os.getcwd()
-print("PATH: ", PATH)
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import asyncio
 import aiohttp
@@ -56,6 +55,7 @@ from dateutil.parser import parse as parse_date
 from sklearn.preprocessing import MinMaxScaler
 from tabulate import tabulate
 #
+from art import *
 from rich import print
 from rich.console import Console
 console = Console()
@@ -333,7 +333,8 @@ def create_data_set(QUESTIONS=False, TEST_MONTHS=0):
 
     # print the dataframes
     for df_name, df in dfs.items():
-        print(f"[bold green]\n------------- {df_name.upper()} -------------[/bold green]")
+
+        print(f"[bold green]\n{text2art(df_name.upper())}[/bold green]")
         print(df)
         find_missing_dates(df)
 
@@ -369,10 +370,16 @@ def create_data_set(QUESTIONS=False, TEST_MONTHS=0):
 
     data_set.to_csv('before_shift.csv', index=True)
 
-    # #################### SHIFT non "SPX" columns by one month ############################
+    #                         ____   _   _  ___  _____  _____ 
+    #                        / ___| | | | ||_ _||  ___||_   _|
+    #                        \___ \ | |_| | | | | |_     | |  
+    #                         ___) ||  _  | | | |  _|    | |  
+    #                        |____/ |_| |_||___||_|      |_| 
+    # #################### SHIFT non "SPX" columns by X months ############################
     non_spx_columns = [col for col in data_set.columns if not col.startswith('SPX')]
+    shift_months = 1
     for col in non_spx_columns:
-        data_set[col] = data_set[col].shift(2)
+        data_set[col] = data_set[col].shift(shift_months)
     ########################################################################################
 
     data_set.to_csv('after_shift.csv', index=True)
@@ -393,12 +400,8 @@ def create_data_set(QUESTIONS=False, TEST_MONTHS=0):
     print("Number of Nans after interpolation = ", data_set.isnull().sum().sum(), "\n\n")
 
     # apply Transformations
-    print("len(data_set) = ", len(data_set))
-    print("TEST_MONTHS = ", TEST_MONTHS)
-    print("++++++++++++++++++++++++++++++++++++++")
     train_size = int(len(data_set) - TEST_MONTHS) 
     data_set, final_train_values = transform_features(data_set, train_size)
-    print("\n\nFinal train values: ", final_train_values)
 
     # plot
     if QUESTIONS:
@@ -421,7 +424,7 @@ def create_data_set(QUESTIONS=False, TEST_MONTHS=0):
     # print time elapsed
     print(f"[blue]Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds\n\n[/blue]")
 
-    return data_set, original_max_values, original_min_values, final_train_values
+    return data_set, original_max_values, original_min_values, final_train_values, shift_months
 
 
 
@@ -445,10 +448,12 @@ if __name__ == "__main__":
 
     # -------------------- CREATE THE DATASET ------------------------
 
-    data_set, original_max_values, original_min_values, final_train_values = create_data_set(QUESTIONS, TEST_MONTHS)
+    data_set, original_max_values, original_min_values, final_train_values, shift_months = create_data_set(QUESTIONS, TEST_MONTHS)
     metadata = {
                 'spx_max_price': original_max_values['SPX_close'],
                 'spx_min_price': original_min_values['SPX_close'],
+                'final_train_values': final_train_values,
+                'shift_months': shift_months,
                 }
 
     # ------------------------- OUTPUT -----------------------

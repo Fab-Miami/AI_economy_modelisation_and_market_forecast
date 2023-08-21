@@ -33,7 +33,6 @@
 import sys
 import os
 PATH = os.getcwd()
-print("PATH: ", PATH)
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import asyncio
 import aiohttp
