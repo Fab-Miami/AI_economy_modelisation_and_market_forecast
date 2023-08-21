@@ -109,3 +109,5 @@ plt.ylabel("Value")
 plt.legend()
 plt.tight_layout()  # Ensure layout looks good with rotated labels
 plt.show()
+
+# TODO: NEED to draw a fat vertical line to show where the prediction starts
