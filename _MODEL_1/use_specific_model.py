@@ -69,9 +69,7 @@ predictions_orig = predictions * (max_price - min_price) + min_price
 predictions_orig = inverse_pct_change(predictions_orig, final_train_values['market_features']['SPX_close'])
 
 
-# ------------------------------
-
-# get the actual SPX
+# ---------- get the actual SPX ----------
 file_path = f'{PATH}/../saved_data_from_static/'
 file = "SP500_SPX_1m.csv"
 spx_actual_df = pd.read_csv(os.path.join(file_path, file), parse_dates=['Date'])
@@ -80,30 +78,28 @@ spx_actual_df['Date'] = spx_actual_df['Date'].apply(lambda date: date.replace(da
 spx_actual_df['Date'] = spx_actual_df['Date'].dt.normalize()  # normalize to midnight (remove time component)
 spx_actual_df.set_index('Date', inplace=True)
 
-# graph the predictions
+# ---------- merge the actual SPX with the predictions ----------
 dates = data_set.index
 spx_actual_df = spx_actual_df[['SPX_close']]
 predictions_df = pd.DataFrame(predictions_orig, index=dates, columns=['Predictions'])
 merged_df = pd.merge(spx_actual_df, predictions_df, left_index=True, right_index=True, how='outer')
 merged_df.fillna(method='ffill', inplace=True) # forward fill missing values
 
-merged_df = merged_df.iloc[-36:]
 
-# ---------- Plot ---------- 
+# ---------- Plot ----------
+merged_df = merged_df.iloc[-36:] # plot only the last 36 months
+
 plt.figure(figsize=(14, 7))
 plt.plot(merged_df.index, merged_df['SPX_close'], label="Real Values", color="blue")
-plt.plot(merged_df.index, merged_df['Predictions']/15.7, label="Predictions", color="red")
+plt.plot(merged_df.index, merged_df['Predictions']/15.7, label="Predictions", color="red")  ## /!\/!\/!\/!\/!\/!\/!\/!\ 15.7 is the last value of SPX_close in the training set????
 
-# One tick per month
-locator = MonthLocator()
+locator = MonthLocator() # One tick per month
 plt.gca().xaxis.set_major_locator(locator)
 
 ax = plt.gca()  # Get current axis
-# Grid
 ax.yaxis.grid(True, linestyle='--', linewidth=0.5, color='grey')
 ax.xaxis.grid(True, linestyle='--', linewidth=0.5, color='lightgrey')
 
-# Using MultipleLocator to set y-ticks every 100 units
 ax.yaxis.set_major_locator(mticker.MultipleLocator(100))
 
 plt.xticks(rotation=45, ha='right')
@@ -113,5 +109,3 @@ plt.ylabel("Value")
 plt.legend()
 plt.tight_layout()  # Ensure layout looks good with rotated labels
 plt.show()
-
-print(data_set['SPX_close'].values)
