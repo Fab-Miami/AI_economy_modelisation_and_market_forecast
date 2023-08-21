@@ -69,7 +69,7 @@ predictions_orig = predictions * (max_price - min_price) + min_price
 predictions_orig = inverse_pct_change(predictions_orig, final_train_values['market_features']['SPX_close'])
 
 
-# ---------- get the actual SPX ----------
+# ---------- get the ACTUAL spx ----------
 file_path = f'{PATH}/../saved_data_from_static/'
 file = "SP500_SPX_1m.csv"
 spx_actual_df = pd.read_csv(os.path.join(file_path, file), parse_dates=['Date'])
