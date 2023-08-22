@@ -12,6 +12,10 @@ import matplotlib.ticker as mticker
 from matplotlib.dates import MonthLocator
 console = Console()
 
+#
+#  python use_specific_model.py
+#
+
 # List all directories in the models directory
 model_path = '/Users/c/Desktop/AI/proto1/models'
 models = [f for f in os.listdir(model_path) if os.path.isdir(os.path.join(model_path, f))]
@@ -41,33 +45,6 @@ if 0 <= choice < len(models):
 else:
     print("Invalid choice!")
 
-# ------------------------------------------------
-
-# get the data: we are getting the full dataframe, until last month. The goal being to predict the next month
-data_set, original_max_values, original_min_values, final_train_values, shift_months = create_data_set()
-
-# Prepare the features (RSI, MACD, etc.)
-features = [col for col in data_set.columns if '-' in col]
-features = sorted(features, key=lambda x: x.split('-')[0])
-
-# Create 3D array
-X = []
-for feature in features:
-    X.append(data_set[feature].values)
-X = np.array(X).T.reshape(-1, len(features), 1)
-
-# Generate predictions using the model
-predictions = model.predict(X)
-
-max_price = original_max_values['SPX_close']
-min_price = original_min_values['SPX_close']
-
-# inverse the scaling of the predicted values
-predictions_orig = predictions * (max_price - min_price) + min_price
-
-# inverse the percent change transformation
-predictions_orig = inverse_pct_change(predictions_orig, final_train_values['market_features']['SPX_close'])
-
 
 # ---------- get the ACTUAL spx ----------
 file_path = f'{PATH}/../saved_data_from_static/'
@@ -78,20 +55,61 @@ spx_actual_df['Date'] = spx_actual_df['Date'].apply(lambda date: date.replace(da
 spx_actual_df['Date'] = spx_actual_df['Date'].dt.normalize()  # normalize to midnight (remove time component)
 spx_actual_df.set_index('Date', inplace=True)
 
+
+# ---------- recreate the dataset ----------
+# get the data: we are getting the full dataframe, until last month. The goal being to predict the next month
+data_set, original_max_values, original_min_values, final_train_values, shift_months = create_data_set()
+
+# prepare the features (RSI, MACD, etc.)
+features = [col for col in data_set.columns if '-' in col]
+features = sorted(features, key=lambda x: x.split('-')[0])
+
+# create 3D array
+X = []
+for feature in features:
+    X.append(data_set[feature].values)
+X = np.array(X).T.reshape(-1, len(features), 1)
+
+
+# ---------- generate predictions using the model ----------
+predictions = model.predict(X)
+
+# inverse the normalization of the predicted values
+max_price = original_max_values['SPX_close']
+min_price = original_min_values['SPX_close']
+predictions_rescaled = predictions * (max_price - min_price) + min_price
+
+# inverse the percent change transformation
+# last_date = spx_actual_df.index[-1]
+# previous_month_date = last_date - pd.DateOffset(months=12)
+# initial_value = spx_actual_df.loc[previous_month_date, 'SPX_close']
+
+first_date = spx_actual_df.index[0]
+initial_value = spx_actual_df.loc[first_date, 'SPX_close']
+
+print("-------------------------------------------")
+print("initial_value", initial_value)
+print(spx_actual_df['SPX_close'].iloc[-12])
+print("-------------------------------------------")
+
+# initial_value = final_train_values['market_features']['SPX_close']
+predictions_inverse_transformation = inverse_pct_change(predictions_rescaled, initial_value)
+
+
 # ---------- merge the actual SPX with the predictions ----------
 dates = data_set.index
 spx_actual_df = spx_actual_df[['SPX_close']]
-predictions_df = pd.DataFrame(predictions_orig, index=dates, columns=['Predictions'])
+predictions_df = pd.DataFrame(predictions_inverse_transformation, index=dates, columns=['Predictions'])
 merged_df = pd.merge(spx_actual_df, predictions_df, left_index=True, right_index=True, how='outer')
 merged_df.fillna(method='ffill', inplace=True) # forward fill missing values
 
 
-# ---------- Plot ----------
-merged_df = merged_df.iloc[-36:] # plot only the last 36 months
+# ---------- plot ----------
+merged_df = merged_df#.iloc[-36:] # plot only the last 36 months
 
 plt.figure(figsize=(14, 7))
 plt.plot(merged_df.index, merged_df['SPX_close'], label="Real Values", color="blue")
-plt.plot(merged_df.index, merged_df['Predictions']/15.7, label="Predictions", color="red")  ## /!\/!\/!\/!\/!\/!\/!\/!\ 15.7 is the last value of SPX_close in the training set????
+plt.plot(merged_df.index, merged_df['Predictions']*4, label="Predictions", color="red")  ## /!\/!\/!\/!\/!\/!\/!\/!\ 15.7 is the last value of SPX_close in the training set????
 
 locator = MonthLocator() # One tick per month
 plt.gca().xaxis.set_major_locator(locator)
