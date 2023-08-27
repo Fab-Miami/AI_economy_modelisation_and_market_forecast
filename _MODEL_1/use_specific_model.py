@@ -1,4 +1,5 @@
 import os
+import json
 from art import *
 PATH = os.getcwd()
 from rich.console import Console
@@ -39,8 +40,9 @@ choice = int(input()) - 1
 if 0 <= choice < len(models):
     model_dir_to_load = os.path.join(model_path, models[choice])
     model = load_model(model_dir_to_load, custom_objects={'Adam': Adam})
-    print(f"Model {models[choice]} has been loaded!")
-    print("\n\nModel Summary:")
+    metadata = json.load(open(os.path.join(model_dir_to_load+"/assets/", 'metadata.json'), 'r'))
+    last_training_date = pd.Timestamp(metadata['last_training_date'])
+
     model.summary()  # Print a summary of the model's architecture
 else:
     print("Invalid choice!")
@@ -105,11 +107,11 @@ merged_df.fillna(method='ffill', inplace=True) # forward fill missing values
 
 
 # ---------- plot ----------
-merged_df = merged_df#.iloc[-36:] # plot only the last 36 months
+merged_df = merged_df.iloc[-36:] # plot only the last 36 months
 
 plt.figure(figsize=(14, 7))
 plt.plot(merged_df.index, merged_df['SPX_close'], label="Real Values", color="blue")
-plt.plot(merged_df.index, merged_df['Predictions']*4, label="Predictions", color="red")  ## /!\/!\/!\/!\/!\/!\/!\/!\ 15.7 is the last value of SPX_close in the training set????
+plt.plot(merged_df.index, merged_df['Predictions']/1.63, label="Predictions", color="red")  ## /!\/!\/!\/!\/!\/!\/!\/!\ 15.7 is the last value of SPX_close in the training set????
 
 locator = MonthLocator() # One tick per month
 plt.gca().xaxis.set_major_locator(locator)
@@ -117,6 +119,8 @@ plt.gca().xaxis.set_major_locator(locator)
 ax = plt.gca()  # Get current axis
 ax.yaxis.grid(True, linestyle='--', linewidth=0.5, color='grey')
 ax.xaxis.grid(True, linestyle='--', linewidth=0.5, color='lightgrey')
+
+plt.axvline(x=last_training_date, color='green', linestyle='--', linewidth=3, label='Last Training Date')
 
 ax.yaxis.set_major_locator(mticker.MultipleLocator(100))
 

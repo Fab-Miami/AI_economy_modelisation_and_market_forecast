@@ -311,6 +311,10 @@ def get_static_data():
 
     return merged_df
 
+def set_dates_to_first_of_the_month(df):
+    df.index = df.index.map(lambda x: x.replace(day=1))
+    return df
+    
 
 # *************************************************************************************************
 # *************************************************************************************************
@@ -330,10 +334,10 @@ def create_data_set(QUESTIONS=False, TEST_MONTHS=0):
         # Create a dictionary with the name of the dataframe as key and the dataframe as value
         print(f"[bold blue]===> Includes: {df_name}[/bold blue]")
         dfs[df_name] = getattr(sys.modules[__name__], func_name)() # Call the function with the name from df_list ( eg: get_fred_data() )
+        set_dates_to_first_of_the_month(dfs[df_name])
 
     # print the dataframes
     for df_name, df in dfs.items():
-
         print(f"[bold green]\n{text2art(df_name.upper())}[/bold green]")
         print(df)
         find_missing_dates(df)
@@ -480,6 +484,9 @@ if __name__ == "__main__":
 
     if model_choice == '1':
         model, X_test, y_test, dates_test = create_the_model_V1(data_set, EPOCHS, TEST_MONTHS)
+
+
+        print(dates_test[0])
     # elif model_choice == '2':
     #     model, X_test, y_test, dates_test = create_the_model_V2(data_set, EPOCHS, TEST_MONTHS)
     elif model_choice == 'n':
@@ -494,8 +501,12 @@ if __name__ == "__main__":
     model_path = f"{PATH}/../models/model_{timestamp}_M{model_choice}_E{EPOCHS}_TM{TEST_MONTHS}"
     model.save(model_path, save_format="tf")
 
+    # add moth month of training to the metadata
+    # dates_test[0] minus one month
+    metadata['last_training_date'] =  (dates_test[0] - pd.DateOffset(months=1)).replace(day=1).strftime('%Y-%m-%d')
+
     # save the metadata
-    metadata_path = f"{model_path}/assets/metadata_{timestamp}.json"
+    metadata_path = f"{model_path}/assets/metadata.json"
     with open(metadata_path, 'w') as file:
         json.dump(metadata, file)
 
