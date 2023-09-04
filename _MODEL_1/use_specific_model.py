@@ -1,21 +1,24 @@
 import os
 import json
-from art import *
-PATH = os.getcwd()
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
+
 from rich.console import Console
 from rich.table import Table
 from keras.models import load_model
 from keras.optimizers import Adam
 from MAIN__ import create_data_set
-import matplotlib.pyplot as plt
 from tools.lstm_V1 import *
-import matplotlib.ticker as mticker
 from matplotlib.dates import MonthLocator
 console = Console()
+from art import *
+PATH = os.getcwd()
 
 #
 #  python use_specific_model.py
 #
+
+model_month_subset = 48  # number of months to use for the prediction
 
 # List all directories in the models directory
 model_path = '/Users/c/Desktop/AI/proto1/models'
@@ -57,7 +60,6 @@ spx_actual_df['Date'] = spx_actual_df['Date'].apply(lambda date: date.replace(da
 spx_actual_df['Date'] = spx_actual_df['Date'].dt.normalize()  # normalize to midnight (remove time component)
 spx_actual_df.set_index('Date', inplace=True)
 
-
 # ---------- recreate the dataset ----------
 # get the data: we are getting the full dataframe, until last month. The goal being to predict the next month
 data_set, original_max_values, original_min_values, final_train_values, shift_months = create_data_set()
@@ -72,6 +74,8 @@ for feature in features:
     X.append(data_set[feature].values)
 X = np.array(X).T.reshape(-1, len(features), 1)
 
+# ----------- get the last XX months of data for the prediction ----------
+X = X[-model_month_subset:]  
 
 # ---------- generate predictions using the model ----------
 predictions = model.predict(X)
@@ -81,37 +85,29 @@ max_price = original_max_values['SPX_close']
 min_price = original_min_values['SPX_close']
 predictions_rescaled = predictions * (max_price - min_price) + min_price
 
-# inverse the percent change transformation
-# last_date = spx_actual_df.index[-1]
-# previous_month_date = last_date - pd.DateOffset(months=12)
-# initial_value = spx_actual_df.loc[previous_month_date, 'SPX_close']
+# get the actual SPY subset inital value for inverse transformation of prediction
+spx_actual_df_subset = spx_actual_df[-model_month_subset:]
+first_date = spx_actual_df_subset.index[0]
+initial_value = spx_actual_df_subset.loc[first_date, 'SPX_close']
 
-first_date = spx_actual_df.index[0]
-initial_value = spx_actual_df.loc[first_date, 'SPX_close']
-
-print("-------------------------------------------")
-print("initial_value", initial_value)
-print(spx_actual_df['SPX_close'].iloc[-12])
-print("-------------------------------------------")
+print(f"\n\n\n\ninitial_value: {initial_value}")
 
 # initial_value = final_train_values['market_features']['SPX_close']
 predictions_inverse_transformation = inverse_pct_change(predictions_rescaled, initial_value)
 
-
 # ---------- merge the actual SPX with the predictions ----------
-dates = data_set.index
-spx_actual_df = spx_actual_df[['SPX_close']]
+dates = data_set.index[-model_month_subset:]
+spx_actual_df = spx_actual_df[['SPX_close']][-model_month_subset:] 
 predictions_df = pd.DataFrame(predictions_inverse_transformation, index=dates, columns=['Predictions'])
 merged_df = pd.merge(spx_actual_df, predictions_df, left_index=True, right_index=True, how='outer')
 merged_df.fillna(method='ffill', inplace=True) # forward fill missing values
-
 
 # ---------- plot ----------
 merged_df = merged_df.iloc[-36:] # plot only the last 36 months
 
 plt.figure(figsize=(14, 7))
 plt.plot(merged_df.index, merged_df['SPX_close'], label="Real Values", color="blue")
-plt.plot(merged_df.index, merged_df['Predictions']/1.63, label="Predictions", color="red")  ## /!\/!\/!\/!\/!\/!\/!\/!\ 15.7 is the last value of SPX_close in the training set????
+plt.plot(merged_df.index, merged_df['Predictions'], label="Predictions", color="red")
 
 locator = MonthLocator() # One tick per month
 plt.gca().xaxis.set_major_locator(locator)
@@ -131,5 +127,3 @@ plt.ylabel("Value")
 plt.legend()
 plt.tight_layout()  # Ensure layout looks good with rotated labels
 plt.show()
-
-# TODO: NEED to draw a fat vertical line to show where the prediction starts
