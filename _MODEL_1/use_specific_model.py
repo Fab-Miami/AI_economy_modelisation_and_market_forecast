@@ -77,7 +77,7 @@ X = np.array(X).T.reshape(-1, len(features), 1)
 # ----------- get the last XX months of data for the prediction ----------
 X = X[-model_month_subset:]  
 
-# ---------- generate predictions using the model ----------
+# ---------- MAKE THE PREDICTION ----------
 predictions = model.predict(X)
 
 # inverse the normalization of the predicted values
@@ -95,12 +95,19 @@ print(f"\n\n\n\ninitial_value: {initial_value}")
 # initial_value = final_train_values['market_features']['SPX_close']
 predictions_inverse_transformation = inverse_pct_change(predictions_rescaled, initial_value)
 
-# ---------- merge the actual SPX with the predictions ----------
-dates = data_set.index[-model_month_subset:]
-spx_actual_df = spx_actual_df[['SPX_close']][-model_month_subset:] 
+# ---------- inverse transform prediction ----------
+dates = data_set.index[-model_month_subset:] # get subset of dates for the prediction
 predictions_df = pd.DataFrame(predictions_inverse_transformation, index=dates, columns=['Predictions'])
+
+# ---------- match prediction with actual at last_training_date ----------
+last_actual_value = spx_actual_df.loc[last_training_date, 'SPX_close']
+predicted_value_at_last_training_date = predictions_df.loc[last_training_date, 'Predictions']
+offset = last_actual_value - predicted_value_at_last_training_date
+predictions_df['Predictions'] = predictions_df['Predictions'] + offset
+
+# ---------- merge the actual SPX with the predictions ----------
+spx_actual_df  = spx_actual_df[['SPX_close']][-model_month_subset:]  # get subset of dates for the actual SPX
 merged_df = pd.merge(spx_actual_df, predictions_df, left_index=True, right_index=True, how='outer')
-merged_df.fillna(method='ffill', inplace=True) # forward fill missing values
 
 # ---------- plot ----------
 merged_df = merged_df.iloc[-36:] # plot only the last 36 months
