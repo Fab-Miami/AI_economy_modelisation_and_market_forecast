@@ -62,7 +62,7 @@ spx_actual_df.set_index('Date', inplace=True)
 
 # ---------- recreate the dataset ----------
 # get the data: we are getting the full dataframe, until last month. The goal being to predict the next month
-data_set, original_max_values, original_min_values, final_train_values, shift_months = create_data_set()
+data_set, original_max_values, original_min_values, final_train_values = create_data_set()
 
 # prepare the features (RSI, MACD, etc.)
 features = [col for col in data_set.columns if '-' in col]
@@ -99,8 +99,13 @@ predictions_inverse_transformation = inverse_pct_change(predictions_rescaled, in
 dates = data_set.index[-model_month_subset:] # get subset of dates for the prediction
 predictions_df = pd.DataFrame(predictions_inverse_transformation, index=dates, columns=['Predictions'])
 
+# ---------- shift the predictions one month forward ----------
+predictions_df.index = predictions_df.index.to_period('M').to_timestamp() + pd.DateOffset(months=1)
+
 # ---------- match prediction with actual at last_training_date ----------
 last_actual_value = spx_actual_df.loc[last_training_date, 'SPX_close']
+
+
 predicted_value_at_last_training_date = predictions_df.loc[last_training_date, 'Predictions']
 offset = last_actual_value - predicted_value_at_last_training_date
 predictions_df['Predictions'] = predictions_df['Predictions'] + offset
@@ -124,7 +129,6 @@ ax.yaxis.grid(True, linestyle='--', linewidth=0.5, color='grey')
 ax.xaxis.grid(True, linestyle='--', linewidth=0.5, color='lightgrey')
 
 plt.axvline(x=last_training_date, color='green', linestyle='--', linewidth=3, label='Last Training Date')
-
 ax.yaxis.set_major_locator(mticker.MultipleLocator(100))
 
 plt.xticks(rotation=45, ha='right')

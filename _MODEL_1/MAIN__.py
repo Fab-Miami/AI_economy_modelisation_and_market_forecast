@@ -1,5 +1,3 @@
-# conda activate py38
-
 # Gross Domestic Product (GDP): This is a measure of the total economic output of a country. An increase in GDP can be a positive sign for the stock market, as it suggests that the economy is growing.
 # Unemployment rate: This is the percentage of the labor force that is actively seeking employment but unable to find it. A lower unemployment rate can be a positive sign for the stock market, as it suggests that the economy is strong and people are able to find jobs.
 # Inflation rate: This is the rate at which the general level of prices for goods and services is rising, and subsequently, purchasing power is falling. Central banks attempt to limit inflation, and a low inflation rate is generally seen as a positive sign for the stock market.
@@ -29,9 +27,6 @@
 # Market volatility: Market volatility can provide insights into investor sentiment and can be used as a feature in your model to predict stock prices.
 
 # LSTM models are not the only option for stock market prediction, other models such as Random Forest, GBM, XGBoost etc. can also be used to generate buy and sell signals. Also, a combination of models such as LSTM with Random Forest can also be used to improve the performance.
-
-#
-#  conda activate py38
 #
 import json
 import sys
@@ -372,22 +367,6 @@ def create_data_set(QUESTIONS=False, TEST_MONTHS=0):
     # add indicators to the dataframe
     data_set = add_indicators(data_set)
 
-    data_set.to_csv('before_shift.csv', index=True)
-
-    #                         ____   _   _  ___  _____  _____ 
-    #                        / ___| | | | ||_ _||  ___||_   _|
-    #                        \___ \ | |_| | | | | |_     | |  
-    #                         ___) ||  _  | | | |  _|    | |  
-    #                        |____/ |_| |_||___||_|      |_| 
-    # #################### SHIFT non "SPX" columns by X months ############################
-    non_spx_columns = [col for col in data_set.columns if not col.startswith('SPX')]
-    shift_months = 1
-    for col in non_spx_columns:
-        data_set[col] = data_set[col].shift(shift_months)
-    ########################################################################################
-
-    data_set.to_csv('after_shift.csv', index=True)
-
     # plot
     if QUESTIONS:
         ask_to_plot("Do you want to plot of the MERGED dataframe WITH INDICATORS? (yes/no):", {'data_set': data_set})
@@ -428,7 +407,7 @@ def create_data_set(QUESTIONS=False, TEST_MONTHS=0):
     # print time elapsed
     print(f"[blue]Total time elapsed: {time.perf_counter() - timer_start:.2f} seconds\n\n[/blue]")
 
-    return data_set, original_max_values, original_min_values, final_train_values, shift_months
+    return data_set, original_max_values, original_min_values, final_train_values
 
 
 
@@ -451,14 +430,7 @@ if __name__ == "__main__":
     TEST_MONTHS = int(parameters.get('test_months') or parameters.get('test_month') or DEFAULTS_TEST_MONTHS)
 
     # -------------------- CREATE THE DATASET ------------------------
-
-    data_set, original_max_values, original_min_values, final_train_values, shift_months = create_data_set(QUESTIONS, TEST_MONTHS)
-    metadata = {
-                'spx_max_price': original_max_values['SPX_close'],
-                'spx_min_price': original_min_values['SPX_close'],
-                'final_train_values': final_train_values,
-                'shift_months': shift_months,
-                }
+    data_set, original_max_values, original_min_values, final_train_values = create_data_set(QUESTIONS, TEST_MONTHS)
 
     # ------------------------- OUTPUT -----------------------
     if QUESTIONS:
@@ -482,6 +454,23 @@ if __name__ == "__main__":
     else:
         model_choice = parameters['model']
 
+    #                         ____   _   _  ___  _____  _____ 
+    #                        / ___| | | | ||_ _||  ___||_   _|
+    #                        \___ \ | |_| | | | | |_     | |  
+    #                         ___) ||  _  | | | |  _|    | |  
+    #                        |____/ |_| |_||___||_|      |_| 
+    # #################### SHIFT non "SPX" columns by X months ############################
+    data_set.to_csv('before_shift.csv', index=True)
+    shift_months = 1
+    for col in data_set.columns:
+        if col != 'SPX_close':
+            data_set[col] = data_set[col].shift(shift_months) # Shifts the feature columns X months forward in time
+    # backfill missing values
+    data_set.fillna(method='bfill', inplace=True)
+    data_set.to_csv('after_shift.csv', index=True)
+    ########################################################################################
+
+
     if model_choice == '1':
         model, X_test, y_test, dates_test = create_the_model_V1(data_set, EPOCHS, TEST_MONTHS)
 
@@ -501,9 +490,13 @@ if __name__ == "__main__":
     model_path = f"{PATH}/../models/model_{timestamp}_M{model_choice}_E{EPOCHS}_TM{TEST_MONTHS}"
     model.save(model_path, save_format="tf")
 
-    # add moth month of training to the metadata
-    # dates_test[0] minus one month
-    metadata['last_training_date'] =  (dates_test[0] - pd.DateOffset(months=1)).replace(day=1).strftime('%Y-%m-%d')
+    # save the scaler
+    metadata = {
+        'spx_max_price': original_max_values['SPX_close'],
+        'spx_min_price': original_min_values['SPX_close'],
+        'shift_months': shift_months,
+        'last_training_date':  (dates_test[0] - pd.DateOffset(months=1)).replace(day=1).strftime('%Y-%m-%d'),
+        }
 
     # save the metadata
     metadata_path = f"{model_path}/assets/metadata.json"
