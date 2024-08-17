@@ -420,7 +420,7 @@ console = Console()
 # ##################################################################### START #############################################################################################
 # if __name__ == "__main__":
 
-#     # cd _MODEL_1
+#     # cd _LSTM_1
 #     # python MAIN__.py model=1 epochs=1000 test_months=48
 
 #     # ------------------------- PARAMETERS -----------------------
@@ -468,7 +468,7 @@ console = Console()
 #         console.print("Bye", style="bold red")
 #         sys.exit(0)
 
-#     model.save(f"{PATH}/../models/model_{datetime.now().strftime('%Y-%m-%d_%H-%M')}", save_format="tf")
+#     model.save(f"{PATH}/models/model_{datetime.now().strftime('%Y-%m-%d_%H-%M')}", save_format="tf")
 
 
 #     # -------------------- TEST THE MODEL  -----------------------
@@ -818,7 +818,7 @@ def create_and_train(self, model_choice):
     #     model, X_test, y_test, dates_test = self.create_the_model_V2()
 
     # Save the model
-    path = f"{PATH}/../models/model_{datetime.now().strftime('%Y-%m-%d_%H-%M')}"
+    path = f"{PATH}/models/model_{datetime.now().strftime('%Y-%m-%d_%H-%M')}"
     self.save_model(model, path)
     
     return model, X_test, y_test, dates_test
@@ -832,7 +832,7 @@ def autocorrelation(self):
 #                                     - STARTS HERE -
 # *************************************************************************************************
 #
-# cd _MODEL_1
+# cd _LSTM_1
 # python MAIN__.py model=1 epochs=1000 test_months=48
 #
 # *************************************************************************************************
@@ -877,4 +877,4 @@ if __name__ == "__main__":
         console.print("Bye", style="bold red")
         sys.exit(0)
 
-    model.save(f"{PATH}/../models/model_{datetime.now().strftime('%Y-%m-%d_%H-%M')}", save_format="tf")
+    model.save(f"{PATH}/models/model_{datetime.now().strftime('%Y-%m-%d_%H-%M')}", save_format="tf")

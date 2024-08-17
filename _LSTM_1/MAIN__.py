@@ -414,7 +414,7 @@ def create_data_set(QUESTIONS=False, TEST_MONTHS=0):
 ##################################################################### START #############################################################################################
 if __name__ == "__main__":
 
-    # cd _MODEL_1
+    # cd _LSTM_1
     # python MAIN__.py model=1 epochs=1000 test_months=48
     #
     # AND TO TEST:
@@ -487,7 +487,7 @@ if __name__ == "__main__":
 
     # save the model
     timestamp = datetime.now().strftime('%Y-%m-%d')
-    model_path = f"{PATH}/../models/model_{timestamp}_M{model_choice}_E{EPOCHS}_TM{TEST_MONTHS}"
+    model_path = f"{PATH}/models/model_{timestamp}_M{model_choice}_E{EPOCHS}_TM{TEST_MONTHS}"
     model.save(model_path, save_format="tf")
 
     # save the scaler
