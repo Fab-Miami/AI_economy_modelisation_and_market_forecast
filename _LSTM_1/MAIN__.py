@@ -411,15 +411,24 @@ def create_data_set(QUESTIONS=False, TEST_MONTHS=0):
 
 
 
-##################################################################### START #############################################################################################
+# *************************************************************************************************
+#                                     - STARTS HERE -
+# *************************************************************************************************
+# ONLY works with Python 3.9X, not above
+# Create the venv like so: /usr/bin/python3/python3.9 -m venv .venv
+# pip install requirements.txt 
+#
+# cd _LSTM_1
+# From this folder: pip freeze > ../requirements.txt
+#
+# python MAIN__.py model=1 epochs=1000 test_months=48
+#
+#
+# AND TO TEST:
+# python use_specific_model.py
+#
+# *************************************************************************************************
 if __name__ == "__main__":
-
-    # cd _LSTM_1
-    # python MAIN__.py model=1 epochs=1000 test_months=48
-    #
-    # AND TO TEST:
-    #
-    # python use_specific_model.py
 
     # ------------------------- PARAMETERS -----------------------
     DEFAULTS_EPOCHS = 300
@@ -487,8 +496,14 @@ if __name__ == "__main__":
 
     # save the model
     timestamp = datetime.now().strftime('%Y-%m-%d')
-    model_path = f"{PATH}/models/model_{timestamp}_M{model_choice}_E{EPOCHS}_TM{TEST_MONTHS}"
-    model.save(model_path, save_format="tf")
+    model_directory = f"{PATH}/models/model_{timestamp}_M{model_choice}_E{EPOCHS}_TM{TEST_MONTHS}"
+    model_filepath  = f"{model_directory}/model.keras"
+
+    if not os.path.exists(model_directory):
+        os.makedirs(model_directory)
+
+    model.save(model_filepath)
+
 
     # save the scaler
     metadata = {
@@ -498,17 +513,23 @@ if __name__ == "__main__":
         'last_training_date':  (dates_test[0] - pd.DateOffset(months=1)).replace(day=1).strftime('%Y-%m-%d'),
         }
 
+    # Ensure the assets directory exists
+    metadata_directory = f"{model_directory}/assets"
+    if not os.path.exists(metadata_directory):
+        os.makedirs(metadata_directory)
+
     # save the metadata
-    metadata_path = f"{model_path}/assets/metadata.json"
+    metadata_path = f"{metadata_directory}/metadata.json"
     with open(metadata_path, 'w') as file:
         json.dump(metadata, file)
+    
 
     # -------------------- TEST THE MODEL  -----------------------
     max_price = original_max_values['SPX_close']
     min_price = original_min_values['SPX_close']
 
     if int(model_choice) == 1:
-        use_model(model, X_test, y_test, dates_test, max_price, min_price, final_train_values, model_path)
+        use_model(model, X_test, y_test, dates_test, max_price, min_price, final_train_values, model_directory)
     # elif int(model_choice) == 2:
     #     test_the_model_V2(model, X_test, y_test, dates_test, max_price, min_price, final_train_values)
 
