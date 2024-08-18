@@ -311,10 +311,7 @@ def set_dates_to_first_of_the_month(df):
     return df
     
 
-# *************************************************************************************************
-# *************************************************************************************************
-#                                     - STARTS HERE -
-# *************************************************************************************************
+
 # *************************************************************************************************
 
 def create_data_set(QUESTIONS=False, TEST_MONTHS=0):
@@ -416,7 +413,8 @@ def create_data_set(QUESTIONS=False, TEST_MONTHS=0):
 # *************************************************************************************************
 # ONLY works with Python 3.9X, not above
 # Create the venv like so: /usr/bin/python3/python3.9 -m venv .venv
-# pip install requirements.txt 
+# pip install requirements.txt
+# source .venv/bin/activate 
 #
 # cd _LSTM_1
 # From this folder: pip freeze > ../requirements.txt

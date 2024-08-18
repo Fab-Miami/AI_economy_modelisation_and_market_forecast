@@ -37,7 +37,7 @@ def plot_dataframes(dataframes):
 
         plt.xlabel('Index')
         plt.ylabel('Scaled Values')
-        plt.legend()
+        # plt.legend()
 
         plt.show()
     else:
@@ -118,8 +118,8 @@ def autocorrelation(df_results):
 
 def add_indicators(data_set):
     print("\n\n[bold]====> ADDING INDICATORS TO:[/bold]")
-    print(data_set.columns)
-    print("[bold]--------------------------------------------[/bold]")
+    print("\ndata_set columns before addition:", data_set.columns)
+    print(f"Shape: {data_set.shape}")
 
     # add RSI
     data_set['SPX-RSI']  = RSI(data_set['SPX_close'], timeperiod=14)
@@ -136,19 +136,27 @@ def add_indicators(data_set):
     data_set['DJI-BBupper'], data_set['DJI-BBlower'], data_set['DJI-BBmiddle'] = BBANDS(data_set['DJI_close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
     data_set['IXIC-BBupper'], data_set['IXIC-BBlower'], data_set['IXIC-BBmiddle'] = BBANDS(data_set['IXIC_close'], timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
 
+    # sort columns by name 
+    data_set.sort_index(axis=1, inplace=True)
+
+    # backfill missing values (not sure that's needed, though)
+    data_set.fillna(method='bfill', inplace=True)
+
+    print("\ndata_set columns after addition:", data_set.columns)
+    print(f"Shape: {data_set.shape}")
+    print("[bold]--------------------------------------------[/bold]")
+
     return data_set
 
-
 def normalize_dataframe(df):
-    df = df.loc[:, df.nunique() != 1]
     max_values = df.max()
     min_values = df.min()
-    normalized_df = (df - min_values) / (max_values - min_values)
+    normalized_df = (df - min_values) / (max_values - min_values).replace(0, 1) # Avoid division by zero in case max_values and min_values are equal
     return normalized_df, max_values, min_values
 
 
 def find_missing_dates(df):
-    print("[bold]\nMissing dates:[/bold]")
+    print("[bold]\nMissing date analysis:[/bold]")
 
     # Ensure the dataframe is sorted by date
     df = df.sort_index()
@@ -178,7 +186,6 @@ def find_missing_dates(df):
         print(f"[red]{list_missing_dates}[/red]\n")
     else:
         print("[bold green]No missing dates found[/bold green]\n")
-    
     return
 
 
