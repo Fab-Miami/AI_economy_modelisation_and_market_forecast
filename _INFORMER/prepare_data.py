@@ -19,7 +19,7 @@ from time import sleep
 console = Console()
 
 
-def create_data_set(QUESTIONS=False, TEST_MONTHS=0):
+def create_dataset(QUESTIONS=False, TEST_MONTHS=0):
     timer_start = time.perf_counter()
 
     df_list = ["fred", "elections", "generator", "static"] # "yahoo" is not used anymore as I'm getting SPX from TadingView as a Static download
@@ -53,32 +53,32 @@ def create_data_set(QUESTIONS=False, TEST_MONTHS=0):
 
     # merge the dataframes
     print(f"\n[bold yellow]============> MERGING DATAFRAMES <============[bold yellow]")
-    data_set = list(dfs.values())[0] # Start with the first dataframe
-    data_set.index = pd.to_datetime(data_set.index) # Convert the index to datetime
-    data_set.index = data_set.index.to_period('M')  # Convert the index to year-month
+    dataset = list(dfs.values())[0] # Start with the first dataframe
+    dataset.index = pd.to_datetime(dataset.index) # Convert the index to datetime
+    dataset.index = dataset.index.to_period('M')  # Convert the index to year-month
     for df in list(dfs.values())[1:]:  # Merge all other dataframes
         df.index = df.index.to_period('M')  # Convert the index to year-month
-        data_set = data_set.merge(df, left_index=True, right_index=True, how='inner') # inner join to keep only the common dates
+        dataset = dataset.merge(df, left_index=True, right_index=True, how='inner') # inner join to keep only the common dates
     # convert index back to datetime format with first day of the month
-    data_set.index = data_set.index.to_timestamp()
+    dataset.index = dataset.index.to_timestamp()
 
     # Fill the holes: Backfill all columns except "Market_Stress"
-    data_set = data_set.apply(lambda col: col.bfill() if col.name != "Market_Stress" else col.fillna(0))
+    dataset = dataset.apply(lambda col: col.bfill() if col.name != "Market_Stress" else col.fillna(0))
 
     # save the merged dataframe as a csv file for inspection
-    data_set.to_csv("inspection_merged_data_set.csv", index=True)
-    print("DataSet has been saved for inspection as 'inspection_merged_data_set.csv'")
+    dataset.to_csv("dataset_merged.csv", index=True)
+    print("DataSet has been saved for inspection as 'dataset_merged.csv'")
 
     # Checks that every month is present in the merged dataframe
-    find_missing_dates(data_set)
+    find_missing_dates(dataset)
 
     if QUESTIONS:
-        ask_to_plot("Do you want to plot of the MERGED dataframe? (yes/no):", {'data_set': data_set})
+        ask_to_plot("Do you want to plot of the MERGED dataframe? (yes/no):", {'dataset': dataset})
 
-    data_set = add_indicators(data_set)
+    dataset = add_indicators(dataset)
 
     if QUESTIONS:
-        ask_to_plot("Do you want to plot of the MERGED dataframe WITH INDICATORS? (yes/no):", {'data_set': data_set})
+        ask_to_plot("Do you want to plot of the MERGED dataframe WITH INDICATORS? (yes/no):", {'dataset': dataset})
 
 
     # --- At this point the df is ready to be  normalized ---
@@ -90,28 +90,31 @@ def create_data_set(QUESTIONS=False, TEST_MONTHS=0):
 
     # Normalization using Z-Score
     scaler = StandardScaler()
-    data_set_normalized = scaler.fit_transform(data_set)
-    data_set_normalized = pd.DataFrame(data_set_normalized, index=data_set.index, columns=data_set.columns)
+    dataset_normalized = scaler.fit_transform(dataset)
+    dataset_normalized = pd.DataFrame(dataset_normalized, index=dataset.index, columns=dataset.columns)
 
-    data_set_normalized.to_csv("inspection_merged_and_normalized_data_set.csv", index=True)
+    dataset_normalized.to_csv("dataset_training.csv", index=True)
 
-    print("Mean should be close to 0 for all columns:\n", data_set_normalized.mean())
-    print("Standard deviation hould be close to 1 for all columns:\n", data_set_normalized.std())
+    print("Normalized dataSet has been saved as 'dataset_training.csv'\n")
+
+    print("Dataset CHECKS:")
+    print("Mean should be close to 0 for all columns:\n", dataset_normalized.mean())
+    print("Standard deviation hould be close to 1 for all columns:\n", dataset_normalized.std())
 
     # Save the scaler for later use
     joblib.dump(scaler, 'scaler.joblib')
-    print("[bold blue]Scaler has been saved as 'scaler.joblib' for future use.[bold blue]")
+    print("[bold blue]\nScaler has been saved as 'scaler.joblib' for future use.[bold blue]")
 
 
     # plot
     if QUESTIONS:
-        ask_to_plot("\nDo you want to plot of the MERGED and NORMALIZED dataframe? (yes/no):", {'data_set': data_set_normalized}, normalize=False)
+        ask_to_plot("\nDo you want to plot of the MERGED and NORMALIZED dataframe? (yes/no):", {'dataset': dataset_normalized}, normalize=False)
     
 
     # print time elapsed
     print(f"[blue]Total time to prepare data: {time.perf_counter() - timer_start:.2f} seconds\n\n[/blue]")
 
-    return data_set_normalized
+    return dataset_normalized
 
 
 # *************************************************************************************************
