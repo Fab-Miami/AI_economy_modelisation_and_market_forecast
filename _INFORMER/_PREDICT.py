@@ -5,6 +5,8 @@ import joblib
 
 PERCENTAGE_DATA_USED_FOR_TRAINING = 0.8
 
+# I need a rolling window
+
 # Load the dataset
 dataset_training = pd.read_csv('dataset_training.csv', index_col=0, parse_dates=True)
 data_tensor = torch.tensor(dataset_training.values, dtype=torch.float32)
@@ -45,7 +47,7 @@ X_test_scaled = torch.tensor(X_test_scaled_reshaped).view(X_test.shape)
 X_test_scaled = X_test_scaled.float()
 
 # Load the model
-output_dim = data_tensor.shape[1]
+output_dim = data_tensor.shape[1] # determine the output dimension
 model = Informer(input_dim=X_train.shape[-1], output_dim=output_dim, d_model=1024, n_heads=16, n_layers=3, dropout=0.1, factor=5)
 
 # Load model weights and ensure they are in float32
