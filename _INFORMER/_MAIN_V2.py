@@ -33,8 +33,10 @@ INPUT_MONTHS = 12
 OUTPUT_MONTHS = 6
 BATCH_SIZE = 32
 LEARNING_RATE = 0.001
+PATIENCE = 100 # how many epochs the validation loss should not improve before the training stops
+SCHEDULER_PATIENCE = 10 # how many epochs the validation loss should not improve before the learning rate is reduced
 #
-DEFAULTS_EPOCHS = 300
+DEFAULTS_EPOCHS = 200
 DEFAULTS_PERCENTAGE_DATA_USED_FOR_TRAINING = .8
 DEFAULTS_MONTH_SEQUENCE_LENGTH = 24 #120
 BATCH_SIZE = 32 # the model processes BATCH_SIZE different sequences of MONTH_SEQUENCE_LENGTH months each at a time.
@@ -90,7 +92,7 @@ model = Informer(input_dim=X.shape[-1], output_dim=X.shape[-1], d_model=512, n_h
 criterion = nn.MSELoss()
 
 optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-5) # weight decay to your optimizer to prevent overfitting:
-scheduler = ReduceLROnPlateau(optimizer, 'min', patience=10, factor=0.5, verbose=True)
+scheduler = ReduceLROnPlateau(optimizer, 'min', patience=SCHEDULER_PATIENCE, factor=0.5, verbose=True)
 
 
 # Training part starts here
@@ -111,10 +113,11 @@ def warmup_lambda(epoch):
 warmup_scheduler = LambdaLR(optimizer, lr_lambda=warmup_lambda)
 
 best_val_loss = float('inf')
-patience = 20
 no_improve_epochs = 0
 train_losses = []
 val_mses = []
+val_maes = []
+val_rmses = []
 
 # Training loop
 for epoch in range(EPOCHS):
@@ -152,6 +155,9 @@ for epoch in range(EPOCHS):
 
     train_losses.append(avg_epoch_loss)
     val_mses.append(avg_val_mse)
+    val_maes.append(avg_val_mae)
+    val_rmses.append(avg_val_rmse)
+    
 
     print(f"Epoch {epoch+1}/{EPOCHS}, Train Loss: {avg_epoch_loss:.4f}, "
           f"Val MSE: {avg_val_mse:.4f}, Val MAE: {avg_val_mae:.4f}, Val RMSE: {avg_val_rmse:.4f}")
@@ -162,12 +168,12 @@ for epoch in range(EPOCHS):
 
         torch.save(model.state_dict(), 'best_informer_model.pth')
         print(f"New best model saved with validation MSE: {best_val_loss:.4f}")
-        
+
         no_improve_epochs = 0
     else:
         no_improve_epochs += 1
     
-    if no_improve_epochs >= patience:
+    if no_improve_epochs >= PATIENCE:
         print(f"Early stopping triggered after {epoch+1} epochs")
         break
 
@@ -177,6 +183,8 @@ print("Training completed. Best model saved as 'best_informer_model.pth'")
 plt.figure(figsize=(10, 5))
 plt.plot(train_losses, label='Train Loss')
 plt.plot(val_mses, label='Validation MSE')
+plt.plot(val_maes, label='Validation MAE')
+plt.plot(val_rmses, label='Validation RMSE')
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.legend()
