@@ -65,8 +65,16 @@ def create_dataset(QUESTIONS=False, TEST_MONTHS=0):
     # Fill the holes: Backfill all columns except "Market_Stress"
     dataset = dataset.apply(lambda col: col.bfill() if col.name != "Market_Stress" else col.fillna(0))
 
+    # Add a column with the Unix Timestamp
+    dataset['Unix_Timestamp'] = dataset.index.map(lambda x: int(time.mktime(x.timetuple())))
+
+    # Normalize the Unix timestamp to a range between 0 and 1
+    min_timestamp = dataset['Unix_Timestamp'].min()
+    max_timestamp = dataset['Unix_Timestamp'].max()
+    dataset['Unix_Timestamp'] = (dataset['Unix_Timestamp'] / 1E9) # Normalize-ish the Unix Timestamp
+
     # save the merged dataframe as a csv file for inspection
-    dataset.to_csv("dataset_merged.csv", index=True)
+    dataset.to_csv("dataset/dataset_merged.csv", index=True)
     print("DataSet has been saved for inspection as 'dataset_merged.csv'")
 
     # Checks that every month is present in the merged dataframe
@@ -86,14 +94,20 @@ def create_dataset(QUESTIONS=False, TEST_MONTHS=0):
 
     print(f"[bold blue]\n============> NORMALIZING DATAFRAMES <============[bold blue]")
 
+    # Normalize all columns except the Unix Timestamp
+    columns_to_normalize = dataset.columns.difference(['Unix_Timestamp'])
+
     # TODO: Normalization to try: Min-Max Scaling
 
     # Normalization using Z-Score
     scaler = StandardScaler()
-    dataset_normalized = scaler.fit_transform(dataset)
-    dataset_normalized = pd.DataFrame(dataset_normalized, index=dataset.index, columns=dataset.columns)
+    dataset_normalized = scaler.fit_transform(dataset[columns_to_normalize])
+    dataset_normalized = pd.DataFrame(dataset_normalized, index=dataset.index, columns=columns_to_normalize)
 
-    dataset_normalized.to_csv("dataset_training.csv", index=True)
+    # Re-add the Unix Timestamp column without normalization
+    dataset_normalized['Unix_Timestamp'] = dataset['Unix_Timestamp']
+
+    dataset_normalized.to_csv("dataset/dataset_training.csv", index=True)
 
     print("Normalized dataSet has been saved as 'dataset_training.csv'\n")
 
@@ -102,7 +116,7 @@ def create_dataset(QUESTIONS=False, TEST_MONTHS=0):
     print("Standard deviation hould be close to 1 for all columns:\n", dataset_normalized.std())
 
     # Save the scaler for later use
-    joblib.dump(scaler, 'scaler.joblib')
+    joblib.dump(scaler, 'dataset/data_scaler.joblib')
     print("[bold blue]\nScaler has been saved as 'scaler.joblib' for future use.[bold blue]")
 
 

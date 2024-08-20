@@ -65,7 +65,7 @@ mode = input().lower()
 if mode == 'g':
     dataset_training = create_dataset(QUESTIONS)
 else:
-    dataset_training = pd.read_csv('dataset_training.csv', index_col=0, parse_dates=True)
+    dataset_training = pd.read_csv('dataset/dataset_training.csv', index_col=0, parse_dates=True)
 
 data_tensor = torch.tensor(dataset_training.values, dtype=torch.float32)
 
@@ -176,7 +176,7 @@ for epoch in range(EPOCHS):
     # Save the best model based on validation MSE
     if avg_val_mse < best_val_loss:
         best_val_loss = avg_val_mse
-        torch.save(model.cpu().state_dict(), 'best_informer_model.pth')
+        torch.save(model.cpu().state_dict(), 'models/best_informer_model.pth')
         model.to(device)  # Move it back to GPU after saving
         print(f"New best model saved with validation MSE: {best_val_loss:.4f}")
         no_improve_epochs = 0
