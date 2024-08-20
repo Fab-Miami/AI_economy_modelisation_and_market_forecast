@@ -3,12 +3,20 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
-from torch.optim.lr_scheduler import ReduceLROnPlateau, LambdaLR
+from torch.optim.lr_scheduler import ReduceLROnPlateau, OneCycleLR
 from model_configuration import Informer
 from prepare_data import create_dataset
 from tools.tool_fct import *
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+
+if torch.backends.mps.is_available():
+    device = torch.device("mps")
+    print(f"Using GPU with MPS")
+else:
+    device = torch.device("cpu")
+    print(f"Using CPU")
+
 
 
 # *************************************************************************************************
@@ -35,7 +43,6 @@ OUTPUT_MONTHS = 6
 BATCH_SIZE = 32 # the model processes BATCH_SIZE different sequences of INPUT_MONTHS months each at a time.
 LEARNING_RATE = 0.001
 PATIENCE = 50 # how many epochs the validation loss should not improve before the training stops
-SCHEDULER_PATIENCE = 20 # how many epochs the validation loss should not improve before the learning rate is reduced
 #
 EMBEDING_SIZE = 2048 # size of the embeddings
 ATTENTION_HEADS = 16 # number of attention heads
@@ -86,14 +93,12 @@ val_dataset = TensorDataset(X_test, y_test)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
 
 # Instantiate the Informer model
-model = Informer(input_dim=X.shape[-1], output_dim=X.shape[-1], d_model=EMBEDING_SIZE, n_heads=ATTENTION_HEADS, n_layers=LAYER_COUNT, dropout=DROPOUT_RATE, factor=5)
+model = Informer(input_dim=X.shape[-1], output_dim=X.shape[-1], d_model=EMBEDING_SIZE, n_heads=ATTENTION_HEADS, n_layers=LAYER_COUNT, dropout=DROPOUT_RATE, factor=5).to(device)
 
 # Loss function
-criterion = nn.MSELoss()
+criterion = nn.MSELoss().to(device)
 
 optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-5) # weight decay of the optimizer to prevent overfitting
-scheduler = ReduceLROnPlateau(optimizer, 'min', patience=SCHEDULER_PATIENCE, factor=0.5)
-
 
 # Training part starts here
 def calculate_metrics(output, target):
@@ -102,15 +107,21 @@ def calculate_metrics(output, target):
     rmse = torch.sqrt(mse)
     return mse.item(), mae.item(), rmse.item()
 
-# Warmup function
-def warmup_lambda(epoch):
-    warmup_epochs = 10
-    if epoch < warmup_epochs:
-        return epoch / warmup_epochs
-    return 1.0
 
-# Create warmup scheduler
-warmup_scheduler = LambdaLR(optimizer, lr_lambda=warmup_lambda)
+# Define total steps
+total_steps = EPOCHS * len(train_loader)
+
+# Create a combined scheduler with warmup
+scheduler = OneCycleLR(
+    optimizer,
+    max_lr=LEARNING_RATE,
+    total_steps=total_steps,
+    pct_start=0.3,  # 30% of the steps will be warmup
+    anneal_strategy='cos',
+    cycle_momentum=False,
+    div_factor=25.0,  # initial_lr = max_lr/25
+    final_div_factor=1e4,  # min_lr = initial_lr/10000
+)
 
 best_val_loss = float('inf')
 no_improve_epochs = 0
@@ -126,15 +137,15 @@ for epoch in range(EPOCHS):
     epoch_loss = 0
     progress_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{EPOCHS}")
     for X_batch, y_batch in progress_bar:
+        X_batch, y_batch = X_batch.to(device), y_batch.to(device)
         optimizer.zero_grad()
         output = model(X_batch, OUTPUT_MONTHS)
         loss = criterion(output, y_batch)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)  # Gradient Clipping
         optimizer.step()
+        scheduler.step()
         epoch_loss += loss.item()
-
-        warmup_scheduler.step()
 
     avg_epoch_loss = epoch_loss / len(train_loader)
 
@@ -142,6 +153,7 @@ for epoch in range(EPOCHS):
     val_mse, val_mae, val_rmse = 0, 0, 0
     with torch.no_grad():
         for X_batch, y_batch in val_loader:
+            X_batch, y_batch = X_batch.to(device), y_batch.to(device)
             output = model(X_batch, OUTPUT_MONTHS)
             batch_mse, batch_mae, batch_rmse = calculate_metrics(output, y_batch)
             val_mse += batch_mse
@@ -151,9 +163,6 @@ for epoch in range(EPOCHS):
     avg_val_mse = val_mse / len(val_loader)
     avg_val_mae = val_mae / len(val_loader)
     avg_val_rmse = val_rmse / len(val_loader)
-
-    # Use MSE for learning rate scheduling
-    scheduler.step(avg_val_mse)
 
     train_losses.append(avg_epoch_loss)
     val_mses.append(avg_val_mse)
@@ -167,7 +176,8 @@ for epoch in range(EPOCHS):
     # Save the best model based on validation MSE
     if avg_val_mse < best_val_loss:
         best_val_loss = avg_val_mse
-        torch.save(model.state_dict(), 'best_informer_model.pth')
+        torch.save(model.cpu().state_dict(), 'best_informer_model.pth')
+        model.to(device)  # Move it back to GPU after saving
         print(f"New best model saved with validation MSE: {best_val_loss:.4f}")
         no_improve_epochs = 0
     else:
