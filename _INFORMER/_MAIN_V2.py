@@ -8,6 +8,7 @@ from model_configuration import Informer
 from prepare_data import create_dataset
 from tools.tool_fct import *
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 
 # *************************************************************************************************
@@ -38,7 +39,7 @@ SCHEDULER_PATIENCE = 20 # how many epochs the validation loss should not improve
 #
 EMBEDING_SIZE = 2048 # size of the embeddings
 ATTENTION_HEADS = 16 # number of attention heads
-LAYER_COUNT = 2 # number of layers
+LAYER_COUNT = 6 # number of layers
 DROPOUT_RATE = 0.2
 #
 DEFAULTS_EPOCHS = 1000
@@ -123,7 +124,8 @@ print("Starting training...")
 for epoch in range(EPOCHS):
     model.train()
     epoch_loss = 0
-    for X_batch, y_batch in train_loader:
+    progress_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{EPOCHS}")
+    for X_batch, y_batch in progress_bar:
         optimizer.zero_grad()
         output = model(X_batch, OUTPUT_MONTHS)
         loss = criterion(output, y_batch)
@@ -132,7 +134,7 @@ for epoch in range(EPOCHS):
         optimizer.step()
         epoch_loss += loss.item()
 
-    warmup_scheduler.step()
+        warmup_scheduler.step()
 
     avg_epoch_loss = epoch_loss / len(train_loader)
 
@@ -165,10 +167,8 @@ for epoch in range(EPOCHS):
     # Save the best model based on validation MSE
     if avg_val_mse < best_val_loss:
         best_val_loss = avg_val_mse
-
         torch.save(model.state_dict(), 'best_informer_model.pth')
         print(f"New best model saved with validation MSE: {best_val_loss:.4f}")
-
         no_improve_epochs = 0
     else:
         no_improve_epochs += 1
