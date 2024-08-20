@@ -29,24 +29,26 @@ import matplotlib.pyplot as plt
 
 
 # ------------------------------- PARAMETERS -----------------------------------------------------------
-INPUT_MONTHS = 12
+INPUT_MONTHS = 36
 OUTPUT_MONTHS = 6
-BATCH_SIZE = 32
+BATCH_SIZE = 32 # the model processes BATCH_SIZE different sequences of INPUT_MONTHS months each at a time.
 LEARNING_RATE = 0.001
-PATIENCE = 100 # how many epochs the validation loss should not improve before the training stops
-SCHEDULER_PATIENCE = 10 # how many epochs the validation loss should not improve before the learning rate is reduced
+PATIENCE = 50 # how many epochs the validation loss should not improve before the training stops
+SCHEDULER_PATIENCE = 20 # how many epochs the validation loss should not improve before the learning rate is reduced
 #
-DEFAULTS_EPOCHS = 200
+EMBEDING_SIZE = 2048 # size of the embeddings
+ATTENTION_HEADS = 16 # number of attention heads
+LAYER_COUNT = 2 # number of layers
+DROPOUT_RATE = 0.2
+#
+DEFAULTS_EPOCHS = 1000
 DEFAULTS_PERCENTAGE_DATA_USED_FOR_TRAINING = .8
-DEFAULTS_MONTH_SEQUENCE_LENGTH = 24 #120
-BATCH_SIZE = 32 # the model processes BATCH_SIZE different sequences of MONTH_SEQUENCE_LENGTH months each at a time.
 #
 parameters = parse_parameters(sys.argv[1:]) # param passed from command line
 print("Parsed parameters:", parameters)
 QUESTIONS = False if 'questions' in parameters and parameters['questions'] else True
 EPOCHS = int(parameters.get('epochs') or parameters.get('epoch') or DEFAULTS_EPOCHS)
 PERCENTAGE_DATA_USED_FOR_TRAINING = float(parameters.get('percentage_training') or DEFAULTS_PERCENTAGE_DATA_USED_FOR_TRAINING)
-MONTH_SEQUENCE_LENGTH = int(parameters.get('sequence_length') or DEFAULTS_MONTH_SEQUENCE_LENGTH)
 # --------------------------------------------------------------------------------------------------------
 
 # Prepare the dataset or get it from file
@@ -57,7 +59,6 @@ if mode == 'g':
 else:
     dataset_training = pd.read_csv('dataset_training.csv', index_col=0, parse_dates=True)
 
-# Assume dataset_training is your prepared DataFrame
 data_tensor = torch.tensor(dataset_training.values, dtype=torch.float32)
 
 def create_sequences(data, input_length, output_length):
@@ -84,15 +85,13 @@ val_dataset = TensorDataset(X_test, y_test)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
 
 # Instantiate the Informer model
-model = Informer(input_dim=X.shape[-1], output_dim=X.shape[-1], d_model=512, n_heads=8, n_layers=3, dropout=0.1, factor=5)
+model = Informer(input_dim=X.shape[-1], output_dim=X.shape[-1], d_model=EMBEDING_SIZE, n_heads=ATTENTION_HEADS, n_layers=LAYER_COUNT, dropout=DROPOUT_RATE, factor=5)
 
-# GPT: you're using Mean Squared Error (MSE) as the loss function for training your model,
-# it might be beneficial to also use other evaluation metrics, such as Mean Absolute Error (MAE)
-# or Root Mean Squared Error (RMSE), when you evaluate the performance of your model
+# Loss function
 criterion = nn.MSELoss()
 
-optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-5) # weight decay to your optimizer to prevent overfitting:
-scheduler = ReduceLROnPlateau(optimizer, 'min', patience=SCHEDULER_PATIENCE, factor=0.5, verbose=True)
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-5) # weight decay of the optimizer to prevent overfitting
+scheduler = ReduceLROnPlateau(optimizer, 'min', patience=SCHEDULER_PATIENCE, factor=0.5)
 
 
 # Training part starts here
@@ -120,6 +119,7 @@ val_maes = []
 val_rmses = []
 
 # Training loop
+print("Starting training...")
 for epoch in range(EPOCHS):
     model.train()
     epoch_loss = 0
@@ -172,21 +172,22 @@ for epoch in range(EPOCHS):
         no_improve_epochs = 0
     else:
         no_improve_epochs += 1
+
+    # Plot and save training statistics after each epoch
+    plt.figure(figsize=(10, 5))
+    plt.plot(train_losses, label='Train Loss')
+    plt.plot(val_mses, label='Validation MSE')
+    plt.plot(val_maes, label='Validation MAE')
+    plt.plot(val_rmses, label='Validation RMSE')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.title(f'Training Progress - Epoch {epoch+1}')
+    plt.savefig('training_progress.png')
+    plt.close()
     
     if no_improve_epochs >= PATIENCE:
         print(f"Early stopping triggered after {epoch+1} epochs")
         break
 
 print("Training completed. Best model saved as 'best_informer_model.pth'")
-
-# Plot some training statistics
-plt.figure(figsize=(10, 5))
-plt.plot(train_losses, label='Train Loss')
-plt.plot(val_mses, label='Validation MSE')
-plt.plot(val_maes, label='Validation MAE')
-plt.plot(val_rmses, label='Validation RMSE')
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.legend()
-plt.savefig('training_progress.png')
-plt.close()
