@@ -39,14 +39,14 @@ else:
 
 # ------------------------------- PARAMETERS -----------------------------------------------------------
 INPUT_MONTHS = 36
-OUTPUT_MONTHS = 6
+OUTPUT_MONTHS = 1
 BATCH_SIZE = 32 # the model processes BATCH_SIZE different sequences of INPUT_MONTHS months each at a time.
 LEARNING_RATE = 0.001
 PATIENCE = 50 # how many epochs the validation loss should not improve before the training stops
 #
 EMBEDING_SIZE = 2048 # size of the embeddings
-ATTENTION_HEADS = 16 # number of attention heads
-LAYER_COUNT = 6 # number of layers
+ATTENTION_HEADS = 128 # number of attention heads
+LAYER_COUNT = 4 # number of layers
 DROPOUT_RATE = 0.2
 #
 DEFAULTS_EPOCHS = 1000
@@ -57,6 +57,8 @@ print("Parsed parameters:", parameters)
 QUESTIONS = False if 'questions' in parameters and parameters['questions'] else True
 EPOCHS = int(parameters.get('epochs') or parameters.get('epoch') or DEFAULTS_EPOCHS)
 PERCENTAGE_DATA_USED_FOR_TRAINING = float(parameters.get('percentage_training') or DEFAULTS_PERCENTAGE_DATA_USED_FOR_TRAINING)
+# --------------------------------------------------------------------------------------------------------
+model_filename = f"best_informer_model_inp{INPUT_MONTHS}_out{OUTPUT_MONTHS}_emb{EMBEDING_SIZE}_heads{ATTENTION_HEADS}_layers{LAYER_COUNT}.pth"
 # --------------------------------------------------------------------------------------------------------
 
 # Prepare the dataset or get it from file
@@ -176,9 +178,10 @@ for epoch in range(EPOCHS):
     # Save the best model based on validation MSE
     if avg_val_mse < best_val_loss:
         best_val_loss = avg_val_mse
-        torch.save(model.cpu().state_dict(), 'models/best_informer_model.pth')
+        torch.save(model.cpu().state_dict(), f'models/{model_filename}')
         model.to(device)  # Move it back to GPU after saving
         print(f"New best model saved with validation MSE: {best_val_loss:.4f}")
+        print(f"New best model saved as '{model_filename}' with validation MSE: {best_val_loss:.4f}")
         no_improve_epochs = 0
     else:
         no_improve_epochs += 1
