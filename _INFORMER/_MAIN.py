@@ -42,8 +42,9 @@ else:
 INPUT_MONTHS = 36
 OUTPUT_MONTHS = 1
 EMBEDDING_SIZE = 2048 # size of the embeddings
-ATTENTION_HEADS = 512 # number of attention heads
-LAYER_COUNT = 6 # number of layers
+D_MODEL = 1 # size of the internal representations used after the initial embeddings (should kinda match the embedding size)
+ATTENTION_HEADS = 1 # number of attention heads
+LAYER_COUNT = 3 # number of layers
 #
 # Training parameters
 BATCH_SIZE = 32 # the model processes BATCH_SIZE different sequences of INPUT_MONTHS months each at a time.
@@ -59,8 +60,8 @@ QUESTIONS = False if 'questions' in parameters and parameters['questions'] else 
 EPOCHS = int(parameters.get('epochs') or parameters.get('epoch') or DEFAULTS_EPOCHS)
 PERCENTAGE_DATA_USED_FOR_TRAINING = float(parameters.get('percentage_training') or DEFAULTS_PERCENTAGE_DATA_USED_FOR_TRAINING)
 # --------------------------------------------------------------------------------------------------------
-model_filename = f"best_informer_model_inp{INPUT_MONTHS}_out{OUTPUT_MONTHS}_emb{EMBEDDING_SIZE}_heads{ATTENTION_HEADS}_layers{LAYER_COUNT}.pth"
-progress_filename = f"training_2019dataset_inp{INPUT_MONTHS}_out{OUTPUT_MONTHS}_emb{EMBEDDING_SIZE}_heads{ATTENTION_HEADS}_layers{LAYER_COUNT}.png"
+model_filename = f"best_informer_model_inp{INPUT_MONTHS}_out{OUTPUT_MONTHS}_emb{EMBEDDING_SIZE}_heads{ATTENTION_HEADS}_dmodel{D_MODEL}_layers{LAYER_COUNT}.pth"
+progress_filename = f"training_2019dataset_masked_inp{INPUT_MONTHS}_out{OUTPUT_MONTHS}_emb{EMBEDDING_SIZE}_heads{ATTENTION_HEADS}_dmodel{D_MODEL}_layers{LAYER_COUNT}.png"
 # --------------------------------------------------------------------------------------------------------
 
 # Prepare the dataset or get it from file
@@ -97,7 +98,14 @@ val_dataset = TensorDataset(X_test, y_test)
 val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
 
 # Instantiate the Informer model
-model = Informer(input_dim=X.shape[-1], output_dim=X.shape[-1], d_model=EMBEDDING_SIZE, n_heads=ATTENTION_HEADS, n_layers=LAYER_COUNT, dropout=DROPOUT_RATE, factor=5).to(device)
+model = Informer(input_dim=X.shape[-1], # all features
+                 output_dim=X.shape[-1], # also all features
+                 embedding_dim=EMBEDDING_SIZE,
+                 d_model=D_MODEL,
+                 n_heads=ATTENTION_HEADS,
+                 n_layers=LAYER_COUNT,
+                 dropout=DROPOUT_RATE,
+                 factor=5).to(device)
 
 # Loss function
 criterion = nn.MSELoss().to(device)
@@ -205,7 +213,7 @@ for epoch in range(EPOCHS):
     plt.ylabel('Loss')
     plt.legend()
     plt.suptitle(f'Training Progress - Epoch {epoch+1} - Best MSE: {best_val_loss:.4f}')
-    plt.title(f'input:{INPUT_MONTHS} output:{OUTPUT_MONTHS} embdedding:{EMBEDDING_SIZE} heads:{ATTENTION_HEADS} layers:{LAYER_COUNT}', fontsize=10)
+    plt.title(f'input:{INPUT_MONTHS} output:{OUTPUT_MONTHS} embdedding:{EMBEDDING_SIZE} heads:{ATTENTION_HEADS} d_model{D_MODEL} layers:{LAYER_COUNT} mask:TRUE', fontsize=10)
     plt.savefig(progress_filename)
     plt.close()
     
