@@ -42,8 +42,8 @@ else:
 INPUT_MONTHS = 36
 OUTPUT_MONTHS = 1
 EMBEDDING_SIZE = 2048 # size of the embeddings
-ATTENTION_HEADS = 1024 # number of attention heads
-LAYER_COUNT = 4 # number of layers
+ATTENTION_HEADS = 512 # number of attention heads
+LAYER_COUNT = 6 # number of layers
 #
 # Training parameters
 BATCH_SIZE = 32 # the model processes BATCH_SIZE different sequences of INPUT_MONTHS months each at a time.
@@ -204,8 +204,8 @@ for epoch in range(EPOCHS):
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.legend()
-    plt.title(f'Training Progress - Epoch {epoch+1} - Best MSE: {best_val_loss:.4f}')
-    plt.suptitle(f'input{INPUT_MONTHS}_output{OUTPUT_MONTHS}_embdedding{EMBEDDING_SIZE}_heads{ATTENTION_HEADS}_layers{LAYER_COUNT}', fontsize=12)
+    plt.suptitle(f'Training Progress - Epoch {epoch+1} - Best MSE: {best_val_loss:.4f}')
+    plt.title(f'input:{INPUT_MONTHS} output:{OUTPUT_MONTHS} embdedding:{EMBEDDING_SIZE} heads:{ATTENTION_HEADS} layers:{LAYER_COUNT}', fontsize=10)
     plt.savefig(progress_filename)
     plt.close()
     
