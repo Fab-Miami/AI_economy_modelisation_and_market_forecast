@@ -132,6 +132,7 @@ class InformerEncoder(nn.Module):
         x = x + y.transpose(1, 2)
 
         return self.norm2(x)
+        
 
 class Informer(nn.Module):
     def __init__(self, input_dim, output_dim, d_model=512, n_heads=8, n_layers=3, dropout=0.1, factor=5):
@@ -150,7 +151,7 @@ class Informer(nn.Module):
         
         self.decoder = nn.Linear(d_model, output_dim)
 
-    def forward(self, src, target_len):
+    def forward(self, src):
         # src shape: (batch_size, sequence_length, input_dim)
         src = self.embedding(src)  # (batch_size, sequence_length, d_model)
         src = self.pos_encoder(src)
@@ -158,19 +159,11 @@ class Informer(nn.Module):
         for enc_layer in self.encoder_layers:
             src = enc_layer(src)
         
-        # Use the last encoder output for multi-step prediction
+        # Use the last encoder output for single-step prediction
         last_hidden = src[:, -1, :]
-        outputs = []
-        for _ in range(target_len):
-            output = self.decoder(last_hidden)
-            outputs.append(output)
-            if self.output_dim != self.input_dim:
-                output = torch.zeros(output.size(0), self.input_dim).to(output.device).scatter_(1, output.argmax(dim=-1, keepdim=True), 1.0)
-            # Update last_hidden for the next step prediction
-            output_embedded = self.embedding(output)
-            last_hidden = self.pos_encoder(output_embedded.unsqueeze(1)).squeeze(1)
+        output = self.decoder(last_hidden)
         
-        return torch.stack(outputs, dim=1)  # (batch_size, target_len, output_dim)
+        return output  # (batch_size, output_dim)
 
 # Usage:
 # model = Informer(input_dim=X_train.shape[2], output_dim=10, d_model=512, n_heads=8, n_layers=3, dropout=0.1)

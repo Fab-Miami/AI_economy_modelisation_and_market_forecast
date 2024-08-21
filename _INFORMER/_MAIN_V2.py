@@ -53,7 +53,7 @@ DEFAULTS_EPOCHS = 1000
 DEFAULTS_PERCENTAGE_DATA_USED_FOR_TRAINING = .8
 #
 parameters = parse_parameters(sys.argv[1:]) # param passed from command line
-print("Parsed parameters:", parameters)
+print(f'Prompt parameters: {parameters}')
 QUESTIONS = False if 'questions' in parameters and parameters['questions'] else True
 EPOCHS = int(parameters.get('epochs') or parameters.get('epoch') or DEFAULTS_EPOCHS)
 PERCENTAGE_DATA_USED_FOR_TRAINING = float(parameters.get('percentage_training') or DEFAULTS_PERCENTAGE_DATA_USED_FOR_TRAINING)
@@ -141,7 +141,11 @@ for epoch in range(EPOCHS):
     for X_batch, y_batch in progress_bar:
         X_batch, y_batch = X_batch.to(device), y_batch.to(device)
         optimizer.zero_grad()
-        output = model(X_batch, OUTPUT_MONTHS)
+        
+        # For single-step prediction, we only need the next time step
+        y_batch = y_batch[:, 0, :]  # Take only the first step of the target
+        
+        output = model(X_batch)
         loss = criterion(output, y_batch)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)  # Gradient Clipping
@@ -156,7 +160,10 @@ for epoch in range(EPOCHS):
     with torch.no_grad():
         for X_batch, y_batch in val_loader:
             X_batch, y_batch = X_batch.to(device), y_batch.to(device)
-            output = model(X_batch, OUTPUT_MONTHS)
+            y_batch = y_batch[:, 0, :]  # Take only the first step of the target
+            
+            output = model(X_batch)
+            
             batch_mse, batch_mae, batch_rmse = calculate_metrics(output, y_batch)
             val_mse += batch_mse
             val_mae += batch_mae
@@ -170,7 +177,6 @@ for epoch in range(EPOCHS):
     val_mses.append(avg_val_mse)
     val_maes.append(avg_val_mae)
     val_rmses.append(avg_val_rmse)
-    
 
     print(f"Epoch {epoch+1}/{EPOCHS}, Train Loss: {avg_epoch_loss:.4f}, "
           f"Val MSE: {avg_val_mse:.4f}, Val MAE: {avg_val_mae:.4f}, Val RMSE: {avg_val_rmse:.4f}")
@@ -180,7 +186,6 @@ for epoch in range(EPOCHS):
         best_val_loss = avg_val_mse
         torch.save(model.cpu().state_dict(), f'models/{model_filename}')
         model.to(device)  # Move it back to GPU after saving
-        print(f"New best model saved with validation MSE: {best_val_loss:.4f}")
         print(f"New best model saved as '{model_filename}' with validation MSE: {best_val_loss:.4f}")
         no_improve_epochs = 0
     else:
@@ -203,4 +208,4 @@ for epoch in range(EPOCHS):
         print(f"Early stopping triggered after {epoch+1} epochs")
         break
 
-print("Training completed. Best model saved as 'best_informer_model.pth'")
+print(f"Training completed. Best model saved as '{model_filename}'")
