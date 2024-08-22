@@ -95,6 +95,9 @@
 # print(f'The optimal number of clusters is: {optimal_clusters}')
 
 
+import numpy as np
 
-print(1724146722/10000000000)
-print(1724146722/1E9)
+# tensor = np.arange(4**5).reshape(4, 4, 4, 4, 4)
+
+print(np.arange(4**5).reshape(4, 4, 4, 4, 4))
+print(np.arange(4**5).reshape(4, 4, 4, 4, 4).shape)
