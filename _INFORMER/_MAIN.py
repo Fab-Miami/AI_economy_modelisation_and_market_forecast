@@ -42,16 +42,18 @@ else:
 INPUT_MONTHS = 36
 OUTPUT_MONTHS = 1
 EMBEDDING_SIZE = 2048 # size of the embeddings
-ATTENTION_HEADS = 32 # number of attention heads (2048 / 32 = 64, -> 64-dimensional subspace ; which is a reasonable number)
+ATTENTION_HEADS = 64 # number of attention heads (2048 / 32 = 64, -> 64-dimensional subspace ; which is a reasonable number)
 LAYER_COUNT = 3 # number of layers
 #
 # Training parameters
-BATCH_SIZE = 32 # the model processes BATCH_SIZE different sequences of INPUT_MONTHS months each at a time.
+BATCH_SIZE = 8 # the model processes BATCH_SIZE different sequences of INPUT_MONTHS months each at a time.
 LEARNING_RATE = 0.0001
 PATIENCE = 50 # how many epochs the validation loss should not improve before the training stops
-DROPOUT_RATE = 0.2
+DROPOUT_RATE = 0.2 # TRY 0.3
 DEFAULTS_EPOCHS = 1000
 DEFAULTS_PERCENTAGE_DATA_USED_FOR_TRAINING = .8
+#
+FOCUS_COLUMN = 44 # column for secondary test
 #
 parameters = parse_parameters(sys.argv[1:]) # param passed from command line
 print(f'Prompt parameters: {parameters}')
@@ -59,8 +61,8 @@ QUESTIONS = False if 'questions' in parameters and parameters['questions'] else 
 EPOCHS = int(parameters.get('epochs') or parameters.get('epoch') or DEFAULTS_EPOCHS)
 PERCENTAGE_DATA_USED_FOR_TRAINING = float(parameters.get('percentage_training') or DEFAULTS_PERCENTAGE_DATA_USED_FOR_TRAINING)
 # --------------------------------------------------------------------------------------------------------
-model_filename = f"best_informer_model_inp{INPUT_MONTHS}_out{OUTPUT_MONTHS}_emb{EMBEDDING_SIZE}_heads{ATTENTION_HEADS}_layers{LAYER_COUNT}.pth"
-progress_filename = f"2019dataset_mask_on_inp{INPUT_MONTHS}_out{OUTPUT_MONTHS}_emb{EMBEDDING_SIZE}_heads{ATTENTION_HEADS}_layers{LAYER_COUNT}.png"
+model_filename = f"best_model_inp{INPUT_MONTHS}_out{OUTPUT_MONTHS}_emb{EMBEDDING_SIZE}_heads{ATTENTION_HEADS}_layers{LAYER_COUNT}_batch{BATCH_SIZE}_rate{LEARNING_RATE}.pth"
+progress_filename = f"2019data_inp{INPUT_MONTHS}_out{OUTPUT_MONTHS}_emb{EMBEDDING_SIZE}_heads{ATTENTION_HEADS}_layers{LAYER_COUNT}_batch{BATCH_SIZE}_rate{LEARNING_RATE}.png"
 # --------------------------------------------------------------------------------------------------------
 
 # Prepare the dataset or get it from file
@@ -121,7 +123,8 @@ def calculate_metrics(output, target):
     mse = nn.MSELoss()(output, target)
     mae = nn.L1Loss()(output, target)
     rmse = torch.sqrt(mse)
-    return mse.item(), mae.item(), rmse.item()
+    focus_mae = nn.L1Loss()(output[:, FOCUS_COLUMN], target[:, FOCUS_COLUMN])
+    return mse.item(), mae.item(), rmse.item(), focus_mae.item()
 
 
 # Define total steps
@@ -145,6 +148,7 @@ train_losses = []
 val_mses = []
 val_maes = []
 # val_rmses = []
+val_focus_maes = []
 
 # Training loop
 print("Starting training...")
@@ -171,7 +175,7 @@ for epoch in range(EPOCHS):
     avg_epoch_loss = epoch_loss / len(train_loader)
 
     model.eval()
-    val_mse, val_mae, val_rmse = 0, 0, 0
+    val_mse, val_mae, val_rmse, val_focus_mae = 0, 0, 0, 0
     with torch.no_grad():
         for X_batch, y_batch in val_loader:
             X_batch, y_batch = X_batch.to(device), y_batch.to(device)
@@ -179,22 +183,25 @@ for epoch in range(EPOCHS):
             
             output = model(X_batch)
             
-            batch_mse, batch_mae, batch_rmse = calculate_metrics(output, y_batch)
+            batch_mse, batch_mae, batch_rmse, batch_focus_mae = calculate_metrics(output, y_batch)
             val_mse += batch_mse
             val_mae += batch_mae
             val_rmse += batch_rmse
+            val_focus_mae += batch_focus_mae
 
     avg_val_mse = val_mse / len(val_loader)
     avg_val_mae = val_mae / len(val_loader)
     avg_val_rmse = val_rmse / len(val_loader)
+    avg_val_focus_mae = val_focus_mae / len(val_loader)
 
     train_losses.append(avg_epoch_loss)
     val_mses.append(avg_val_mse)
     val_maes.append(avg_val_mae)
     # val_rmses.append(avg_val_rmse)
+    val_focus_maes.append(avg_val_focus_mae)
 
     print(f"Epoch {epoch+1}/{EPOCHS}, Train Loss: {avg_epoch_loss:.4f}, "
-          f"Val MSE: {avg_val_mse:.4f}, Val MAE: {avg_val_mae:.4f}, Val RMSE: {avg_val_rmse:.4f}")
+          f"Val MSE: {avg_val_mse:.4f}, Val MAE: {avg_val_mae:.4f}, Focus MAE: {avg_val_focus_mae:.4f}")
 
     # Save the best model based on validation MSE
     if avg_val_mse < best_val_loss:
@@ -212,13 +219,14 @@ for epoch in range(EPOCHS):
     plt.plot(val_maes, label='Validation MAE', color='lightblue')
     plt.plot(val_mses, label='Validation MSE')
     # plt.plot(val_rmses, label='Validation RMSE')
+    plt.plot(val_focus_maes, label=f'Focus Column {FOCUS_COLUMN} MAE', color='red', linewidth=1.5)
     plt.ylim(0, 2)
     plt.grid(True, which='both', axis='y', linestyle='-', linewidth=0.5)
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.legend()
     plt.suptitle(f'Training Progress - Epoch {epoch+1} - Best MSE: {best_val_loss:.4f}')
-    plt.title(f'input:{INPUT_MONTHS} output:{OUTPUT_MONTHS} embdedding:{EMBEDDING_SIZE} heads:{ATTENTION_HEADS} layers:{LAYER_COUNT}', fontsize=10)
+    plt.title(f'input:{INPUT_MONTHS} output:{OUTPUT_MONTHS} embdedding:{EMBEDDING_SIZE} heads:{ATTENTION_HEADS} layers:{LAYER_COUNT} batch:{BATCH_SIZE} rate:{LEARNING_RATE}', fontsize=10)
     plt.savefig(progress_filename)
     plt.close()
     
