@@ -130,6 +130,9 @@ class ProbAttention(nn.Module):
         
         scores_top, index = self._prob_QK(queries, keys, u, U_part)
 
+        if self.mask_flag and attn_mask is not None:
+            scores_top = scores_top.masked_fill(attn_mask[:, :, :U_part], float('-inf'))
+
         scale = self.scale or 1./np.sqrt(head_dim)
         if scale is not None:
             scores_top = scores_top * scale
@@ -216,19 +219,19 @@ class Informer(nn.Module):
         
         self.decoder = nn.Linear(d_model, output_dim)
 
-    def forward(self, src):
-        # src shape: (batch_size, sequence_length, input_dim)
-        src = self.embedding(src)  # (batch_size, sequence_length, d_model)
+    def forward(self, src, mask=None):
+        src = self.embedding(src)
         src = self.pos_encoder(src)
         
         for enc_layer in self.encoder_layers:
-            src = enc_layer(src)
+            # src = enc_layer(src)
+            src = enc_layer(src, mask)
         
-        # Use the last encoder output for single-step prediction
         last_hidden = src[:, -1, :]
         output = self.decoder(last_hidden)
         
-        return output  # (batch_size, output_dim)
+        return output
+
 
 # Usage:
 # model = Informer(input_dim=X_train.shape[2], output_dim=10, d_model=512, n_heads=8, n_layers=3, dropout=0.1)

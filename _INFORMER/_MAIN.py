@@ -47,7 +47,7 @@ LAYER_COUNT = 3 # number of layers
 #
 # Training parameters
 BATCH_SIZE = 32 # the model processes BATCH_SIZE different sequences of INPUT_MONTHS months each at a time.
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.0001
 PATIENCE = 50 # how many epochs the validation loss should not improve before the training stops
 DROPOUT_RATE = 0.2
 DEFAULTS_EPOCHS = 1000
@@ -72,6 +72,10 @@ else:
     dataset_training = pd.read_csv('dataset/dataset_training.csv', index_col=0, parse_dates=True)
 
 data_tensor = torch.tensor(dataset_training.values, dtype=torch.float32)
+
+def create_mask(size):
+    mask = torch.triu(torch.ones(size, size), diagonal=1).bool()
+    return mask.to(device)
 
 def create_sequences(data, input_length, output_length):
     xs, ys = [], []
@@ -144,6 +148,7 @@ val_maes = []
 
 # Training loop
 print("Starting training...")
+mask = create_mask(INPUT_MONTHS)
 for epoch in range(EPOCHS):
     model.train()
     epoch_loss = 0
