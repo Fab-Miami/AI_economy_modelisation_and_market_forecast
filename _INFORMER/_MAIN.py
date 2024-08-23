@@ -9,6 +9,7 @@ from prepare_data import create_dataset
 from tools.tool_fct import *
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from torch.nn import L1Loss
 
 if torch.backends.mps.is_available():
     device = torch.device("mps")
@@ -39,18 +40,18 @@ else:
 
 # ------------------------------- PARAMETERS -----------------------------------------------------------
 # Model parameters
-INPUT_MONTHS = 24
+INPUT_MONTHS = 12
 OUTPUT_MONTHS = 1
-LAYER_COUNT = 3 # number of layers
+LAYER_COUNT = 4 # number of layers
 EMBEDDING_SIZE = 2048 # ()>4096< is too big) size of the embeddings
 ATTENTION_HEADS = 256 # OK number of attention heads (2048 / 32 = 64, -> 64-dimensional subspace ; which is a reasonable number)
 #
 # Training parameters
-BATCH_SIZE = 4 # the model processes BATCH_SIZE different sequences of INPUT_MONTHS months each at a time.
+BATCH_SIZE = 16 # the model processes BATCH_SIZE different sequences of INPUT_MONTHS months each at a time.
 LEARNING_RATE = 0.0001
-PATIENCE = 100 # how many epochs the validation loss should not improve before the training stops
+PATIENCE = 5000 # how many epochs the validation loss should not improve before the training stops
 DROPOUT_RATE = 0.3 # TRY 0.3
-DEFAULTS_EPOCHS = 1000
+DEFAULTS_EPOCHS = 10000
 DEFAULTS_PERCENTAGE_DATA_USED_FOR_TRAINING = .8
 #
 FOCUS_COLUMN = 44 # column for secondary test
@@ -110,7 +111,9 @@ model = Informer(
     n_heads=ATTENTION_HEADS, 
     n_layers=LAYER_COUNT, 
     dropout=DROPOUT_RATE, 
-    factor=5
+    factor=5,
+    l1_lambda=1e-5,
+    l2_lambda=1e-4
 ).to(device)
 
 # Loss function
@@ -150,6 +153,11 @@ val_maes = []
 # val_rmses = []
 val_focus_maes = []
 
+
+l1_lambda = 1e-5  # L1 regularization strength
+l2_lambda = 1e-4  # L2 regularization strength
+l1_loss = L1Loss(reduction='sum')
+
 # Training loop
 print("Starting training...")
 mask = create_mask(INPUT_MONTHS)
@@ -163,7 +171,6 @@ for epoch in range(EPOCHS):
         
         # For single-step prediction, we only need the next time step
         y_batch = y_batch[:, 0, :]  # Take only the first step of the target
-        
         output = model(X_batch)
         loss = criterion(output, y_batch)
         loss.backward()

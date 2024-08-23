@@ -168,8 +168,6 @@ class InformerEncoder(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.activation = F.relu if activation == "relu" else F.gelu
 
-        
-
     def forward(self, x, attn_mask=None):
         # x [B, L, D]
         new_x = self.attention(x, x, x, self.n_heads, attn_mask)
@@ -203,12 +201,13 @@ class InformerEncoder(nn.Module):
 #         self.decoder = nn.Linear(d_model, output_dim)
 
 class Informer(nn.Module):
-    def __init__(self, input_dim, output_dim, d_model, n_heads, n_layers=3, dropout=0.1, factor=5):
+    def __init__(self, input_dim, output_dim, d_model, n_heads, n_layers=3, dropout=0.1, factor=5, l1_lambda=0, l2_lambda=0):
         super(Informer, self).__init__()
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.d_model = d_model
-
+        self.l1_lambda = l1_lambda
+        self.l2_lambda = l2_lambda
         self.embedding = nn.Linear(input_dim, d_model)
         self.pos_encoder = PositionalEncoding(d_model)
         
@@ -218,6 +217,18 @@ class Informer(nn.Module):
         ])
         
         self.decoder = nn.Linear(d_model, output_dim)
+
+    def get_l1_loss(self):
+        l1_loss = 0
+        for param in self.parameters():
+            l1_loss += torch.sum(torch.abs(param))
+        return self.l1_lambda * l1_loss
+
+    def get_l2_loss(self):
+        l2_loss = 0
+        for param in self.parameters():
+            l2_loss += torch.sum(param ** 2)
+        return self.l2_lambda * l2_loss
 
     def forward(self, src, mask=None):
         src = self.embedding(src)
